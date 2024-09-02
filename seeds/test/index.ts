@@ -12,7 +12,7 @@ export const apps = [
 		user_created: users[0]!.id,
 		name: 'App One',
 		secret: null,
-		redirect_url: 'https://example.com/one/callback',
+		redirect_urls: JSON.stringify([ 'https://example.com/one/callback' ]),
 		grants: JSON.stringify([ 'authorization_code', 'refresh_token' ]),
 	},
 	{
@@ -20,7 +20,7 @@ export const apps = [
 		user_created: users[1]!.id,
 		name: 'App Two',
 		secret: 'secret2',
-		redirect_url: 'https://example.com/two/callback',
+		redirect_urls: JSON.stringify([ 'https://example.com/two/callback' ]),
 		grants: JSON.stringify([ 'authorization_code', 'refresh_token' ]),
 	},
 ];

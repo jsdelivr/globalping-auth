@@ -41,7 +41,7 @@ describe('OAuth', () => {
 			.set(headers)
 			.query({
 				client_id: client.id,
-				redirect_uri: client.redirect_url,
+				redirect_uri: JSON.parse(client.redirect_urls)[0],
 				response_type: 'code',
 				scope: 'measurements',
 				state: 'someRandomState',
@@ -80,7 +80,7 @@ describe('OAuth', () => {
 				client_id: client.id,
 				client_secret: client.secret,
 				code: authorizationCode,
-				redirect_uri: client.redirect_url,
+				redirect_uri: JSON.parse(client.redirect_urls)[0],
 				grant_type: 'authorization_code',
 				code_verifier: codeVerifier,
 				...body,

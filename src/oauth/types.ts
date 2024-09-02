@@ -30,7 +30,7 @@ export type ClientRow = {
 	id: string;
 	name: string;
 	secret: string | null;
-	redirect_url: string;
+	redirect_urls: string;
 	grants: string;
 	access_token_lifetime: number | null;
 	refresh_token_lifetime: number | null;

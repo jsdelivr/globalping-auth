@@ -11,7 +11,7 @@ CREATE TABLE `gp_apps` (
 	`date_updated` timestamp NULL DEFAULT NULL,
 	`name` varchar(255) DEFAULT NULL,
 	`secret` varchar(255) DEFAULT NULL,
-	`redirect_url` varchar(255) DEFAULT NULL,
+	`redirect_urls` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin CHECK (json_valid(`redirect_urls`)),
 	`grants` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT '\'[]\'' CHECK (json_valid(`grants`)),
 	`access_token_lifetime` int(11) DEFAULT NULL,
 	`refresh_token_lifetime` int(11) DEFAULT NULL,

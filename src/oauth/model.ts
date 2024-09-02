@@ -217,7 +217,7 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 			name: client.name,
 			secret: client.secret,
 			requestSecret: clientSecret,
-			redirectUris: client.redirect_url,
+			redirectUris: JSON.parse(client.redirect_urls) as string[],
 			grants: JSON.parse(client.grants) as string[],
 			...client.access_token_lifetime ? { accessTokenLifetime: client.access_token_lifetime } : {},
 			...client.refresh_token_lifetime ? { refreshTokenLifetime: client.refresh_token_lifetime } : {},
