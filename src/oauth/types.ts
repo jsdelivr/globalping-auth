@@ -1,10 +1,10 @@
 import { AuthorizationCode, Client, Token as TokenWithClientUser } from '@node-oauth/oauth2-server';
 
 export type AuthorizationCodeToSave = Pick<AuthorizationCode, 'authorizationCode' | 'expiresAt' | 'redirectUri' | 'scope' | 'codeChallenge' | 'codeChallengeMethod'>;
-export type AuthorizationCodeSaved = AuthorizationCodeToSave & { client: Pick<Client, 'id' | 'name'>, user: User };
+export type AuthorizationCodeSaved = AuthorizationCodeToSave & { client: Pick<Client, 'id' | 'name'>, user: User, owner: { name: string | null, url: string | null } };
 export type PublicAuthorizationCodeDetails = Pick<AuthorizationCodeSaved, 'scope' | 'client'>;
 export type Token = Pick<TokenWithClientUser, 'accessToken' | 'accessTokenExpiresAt' | 'refreshToken' | 'refreshTokenExpiresAt' | 'scope'>;
-export type ClientWithCredentials = Client & { name: string, secret: string | null };
+export type ClientWithCredentials = Client & { name: string, secret: string | null, owner_name: string | null, owner_url: string | null };
 export type User = { id: string; $state: string | null };
 
 export type InternalToken = {
@@ -29,6 +29,8 @@ export type InternalTokenRow = Omit<InternalToken, 'scopes' | 'origins'> & {
 export type ClientRow = {
 	id: string;
 	name: string;
+	owner_name: string | null;
+	owner_url: string | null;
 	secret: string | null;
 	redirect_urls: string;
 	grants: string;

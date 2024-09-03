@@ -10,6 +10,8 @@ CREATE TABLE `gp_apps` (
 	`user_updated` char(36) DEFAULT NULL,
 	`date_updated` timestamp NULL DEFAULT NULL,
 	`name` varchar(255) DEFAULT NULL,
+	`owner_name` varchar(255) NULL DEFAULT NULL,
+	`owner_url` varchar(255) NULL DEFAULT NULL,
 	`secret` varchar(255) DEFAULT NULL,
 	`redirect_urls` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin CHECK (json_valid(`redirect_urls`)),
 	`grants` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT '\'[]\'' CHECK (json_valid(`grants`)),

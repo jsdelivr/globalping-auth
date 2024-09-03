@@ -19,6 +19,8 @@ export const apps = [
 		id: 'b2a50a7e-6dc5-423d-864e-173ea690992e',
 		user_created: users[1]!.id,
 		name: 'App Two',
+		owner_name: 'Some Organization',
+		owner_url: 'https://example.com/org',
 		secret: 'secret2',
 		redirect_urls: JSON.stringify([ 'https://example.com/two/callback' ]),
 		grants: JSON.stringify([ 'authorization_code', 'refresh_token' ]),

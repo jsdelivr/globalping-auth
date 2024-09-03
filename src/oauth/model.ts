@@ -181,7 +181,7 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 		await Promise.all([
 			this.redis.json.set(key, '$', {
 				...code,
-				client: { id: client.id, name: client.name },
+				client: { id: client.id, name: client.name, owner: { name: client.owner_name, url: client.owner_url } },
 				user: { id: user.id, $state: user.$state },
 			}),
 			this.redis.pExpireAt(key, code.expiresAt),
@@ -216,6 +216,8 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 			id: client.id,
 			name: client.name,
 			secret: client.secret,
+			owner_name: client.owner_name,
+			owner_url: client.owner_url,
 			requestSecret: clientSecret,
 			redirectUris: JSON.parse(client.redirect_urls) as string[],
 			grants: JSON.parse(client.grants) as string[],
