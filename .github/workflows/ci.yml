@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [ "*" ]
+  pull_request:
+    branches: [ "*" ]
+
+jobs:
+  build:
+    name: Run tests
+    runs-on: ubuntu-latest
+
+    env:
+      NODE_ENV: test
+
+    services:
+      redis:
+        image: redis/redis-stack-server:latest
+        ports:
+          - 16379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      mariadb:
+        image: mariadb:10.11.5
+        ports:
+          - 13306:3306
+        env:
+          MARIADB_DATABASE: dashboard-globalping-test
+          MARIADB_USER: directus
+          MARIADB_PASSWORD: password
+          MARIADB_RANDOM_ROOT_PASSWORD: 1
+        options: >-
+          --health-cmd "mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+      - name: Build
+        run: |
+          npm ci
+          npm run build
+      - name: Test Unit, Integration
+        run: |
+          npm run lint
+          npm run coverage
+      - name: Test Dist
+        run: |
+          rm -rf node_modules
+          npm ci --omit=dev
+          npm run test:dist
