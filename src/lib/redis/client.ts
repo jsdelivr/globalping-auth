@@ -11,8 +11,8 @@ export const initRedisClient = async () => {
 const createRedisClient = (options?: RedisClientOptions) => {
 	return createRedisClientInternal({
 		...options,
-		database: 0,
-		name: 'non-persistent',
+		database: 1,
+		name: 'persistent',
 	});
 };
 
