@@ -4,7 +4,7 @@ export type AuthorizationCodeToSave = Pick<AuthorizationCode, 'authorizationCode
 export type AuthorizationCodeSaved = AuthorizationCodeToSave & { client: Pick<Client, 'id' | 'name'>, user: User, owner: { name: string | null, url: string | null } };
 export type PublicAuthorizationCodeDetails = Pick<AuthorizationCodeSaved, 'scope' | 'client'>;
 export type Token = Pick<TokenWithClientUser, 'accessToken' | 'accessTokenExpiresAt' | 'refreshToken' | 'refreshTokenExpiresAt' | 'scope'>;
-export type ClientWithCredentials = Client & { name: string, secret: string | null, owner_name: string | null, owner_url: string | null };
+export type ClientWithCredentials = Client & { name: string, secrets: string[], owner_name: string | null, owner_url: string | null };
 export type User = { id: string; $state: string | null };
 
 export type InternalToken = {
@@ -31,7 +31,7 @@ export type ClientRow = {
 	name: string;
 	owner_name: string | null;
 	owner_url: string | null;
-	secret: string | null;
+	secrets: string;
 	redirect_urls: string;
 	grants: string;
 	access_token_lifetime: number | null;
