@@ -202,29 +202,40 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 	}
 
 	async getClient (clientId: string, clientSecret: string | null): Promise<ClientWithCredentials> {
-		const client = await this.sql(OAuthModel.appsTable).where({ id: clientId }).first<ClientRow>();
+		const row = await this.sql(OAuthModel.appsTable).where({ id: clientId }).first<ClientRow>();
 
-		if (!client) {
+		if (!row) {
 			throw new InvalidClientError('Invalid client: client is invalid');
 		}
 
-		if (client.secret && clientSecret && clientSecret !== client.secret) {
-			throw new InvalidClientError('Invalid client: client credentials are invalid');
+		const client = {
+			id: row.id,
+			name: row.name,
+			secrets: JSON.parse(row.secrets) as string[],
+			owner_name: row.owner_name,
+			owner_url: row.owner_url,
+			requestSecret: clientSecret,
+			redirectUris: JSON.parse(row.redirect_urls) as string[],
+			grants: JSON.parse(row.grants) as string[],
+			...row.access_token_lifetime ? { accessTokenLifetime: row.access_token_lifetime } : {},
+			...row.refresh_token_lifetime ? { refreshTokenLifetime: row.refresh_token_lifetime } : {},
+		};
+
+		if (client.secrets.length && clientSecret) {
+			let bytes;
+
+			try {
+				bytes = base32.decode(clientSecret.toUpperCase());
+			} catch {
+				bytes = null;
+			}
+
+			if (!bytes || !client.secrets.includes(createHash('sha256').update(bytes).digest('base64'))) {
+				throw new InvalidClientError('Invalid client: client credentials are invalid');
+			}
 		}
 
-		return {
-			id: client.id,
-			name: client.name,
-			secret: client.secret,
-			owner_name: client.owner_name,
-			owner_url: client.owner_url,
-			requestSecret: clientSecret,
-			redirectUris: JSON.parse(client.redirect_urls) as string[],
-			grants: JSON.parse(client.grants) as string[],
-			...client.access_token_lifetime ? { accessTokenLifetime: client.access_token_lifetime } : {},
-			...client.refresh_token_lifetime ? { refreshTokenLifetime: client.refresh_token_lifetime } : {},
-
-		};
+		return client;
 	}
 
 	async getUser (id: string): Promise<InternalUser | null> {
