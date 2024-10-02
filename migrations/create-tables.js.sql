@@ -12,7 +12,7 @@ CREATE TABLE `gp_apps` (
 	`name` varchar(255) DEFAULT NULL,
 	`owner_name` varchar(255) NULL DEFAULT NULL,
 	`owner_url` varchar(255) NULL DEFAULT NULL,
-	`secret` varchar(255) DEFAULT NULL,
+	`secrets` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT '\'[]\'' CHECK (json_valid(`secrets`)),
 	`redirect_urls` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin CHECK (json_valid(`redirect_urls`)),
 	`grants` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT '\'[]\'' CHECK (json_valid(`grants`)),
 	`access_token_lifetime` int(11) DEFAULT NULL,

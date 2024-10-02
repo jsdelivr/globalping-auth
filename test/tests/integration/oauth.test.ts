@@ -10,7 +10,7 @@ import type { Server } from 'node:http';
 
 import { client as sql } from '../../../src/lib/sql/client.js';
 import { getTestServer } from '../../utils/server.js';
-import { apps, users } from '../../../seeds/test/index.js';
+import { apps, secrets, users } from '../../../seeds/test/index.js';
 
 const sessionSecret = config.get<string>('server.session.cookieSecret');
 
@@ -78,7 +78,7 @@ describe('OAuth', () => {
 			.set(headers)
 			.send({
 				client_id: client.id,
-				client_secret: client.secret,
+				client_secret: secrets.get(client),
 				code: authorizationCode,
 				redirect_uri: JSON.parse(client.redirect_urls)[0],
 				grant_type: 'authorization_code',
@@ -225,7 +225,7 @@ describe('OAuth', () => {
 
 		it('should fail with invalid client_secret if the client has one', async () => {
 			const res1 = await defaultTokenRequest(client2, {}, {
-				client_secret: 'xxx',
+				client_secret: 'invalidSecretValue',
 			});
 
 			expect(res1.status).to.equal(400);
@@ -233,11 +233,19 @@ describe('OAuth', () => {
 			expect(res1.body).to.have.property('error_description').that.includes('client credentials are invalid');
 
 			const res2 = await defaultTokenRequest(client2, {}, {
-				client_secret: 'secret2',
+				client_secret: 'wrongSecretValue23456723456723456723456723456723',
 			});
 
-			expect(res2.status).to.equal(200);
-			expect(res2.body).to.have.property('access_token');
+			expect(res2.status).to.equal(400);
+			expect(res2.body).to.have.property('error', 'invalid_client');
+			expect(res2.body).to.have.property('error_description').that.includes('client credentials are invalid');
+
+			const res3 = await defaultTokenRequest(client2, {}, {
+				client_secret: secrets.get(client2),
+			});
+
+			expect(res3.status).to.equal(200);
+			expect(res3.body).to.have.property('access_token');
 		});
 
 		it('should fail with unsupported grant_type', async () => {
@@ -315,7 +323,7 @@ describe('OAuth', () => {
 				.set('Content-Type', 'application/x-www-form-urlencoded')
 				.send({
 					client_id: client1.id,
-					client_secret: client1.secret,
+					client_secret: secrets.get(client1),
 					refresh_token: refreshToken,
 					grant_type: 'refresh_token',
 				});
@@ -334,7 +342,7 @@ describe('OAuth', () => {
 				.set('Content-Type', 'application/x-www-form-urlencoded')
 				.send({
 					client_id: client1.id,
-					client_secret: client1.secret,
+					client_secret: secrets.get(client1),
 					refresh_token: 'invalid_refresh_token',
 					grant_type: 'refresh_token',
 				});
@@ -364,7 +372,7 @@ describe('OAuth', () => {
 				.set('Content-Type', 'application/x-www-form-urlencoded')
 				.send({
 					client_id: client1.id,
-					client_secret: client1.secret,
+					client_secret: secrets.get(client1),
 					refresh_token: refreshToken,
 					grant_type: 'refresh_token',
 				});
@@ -380,7 +388,7 @@ describe('OAuth', () => {
 				.set('Content-Type', 'application/x-www-form-urlencoded')
 				.send({
 					client_id: client1.id,
-					client_secret: client1.secret,
+					client_secret: secrets.get(client1),
 					grant_type: 'refresh_token',
 				});
 
@@ -402,7 +410,7 @@ describe('OAuth', () => {
 				.send({
 					token,
 					client_id: client.id,
-					client_secret: client.secret,
+					client_secret: secrets.get(client),
 				});
 		};
 
@@ -474,7 +482,7 @@ describe('OAuth', () => {
 				.send({
 					token,
 					client_id: client.id,
-					client_secret: client.secret,
+					client_secret: secrets.get(client),
 				});
 		};
 

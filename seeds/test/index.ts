@@ -11,7 +11,7 @@ export const apps = [
 		id: '74eb66bd-1e4c-4c84-b275-e5b477da2087',
 		user_created: users[0]!.id,
 		name: 'App One',
-		secret: null,
+		secrets: '[]',
 		redirect_urls: JSON.stringify([ 'https://example.com/one/callback' ]),
 		grants: JSON.stringify([ 'authorization_code', 'refresh_token' ]),
 	},
@@ -21,11 +21,13 @@ export const apps = [
 		name: 'App Two',
 		owner_name: 'Some Organization',
 		owner_url: 'https://example.com/org',
-		secret: 'secret2',
+		secrets: '["v5TSHQUuwfP+ltCV00sFdfiBcI8JC8ZCNrNB33H8IVI="]',
 		redirect_urls: JSON.stringify([ 'https://example.com/two/callback' ]),
 		grants: JSON.stringify([ 'authorization_code', 'refresh_token' ]),
 	},
 ];
+
+export const secrets = new Map([ [ apps[1], 'tzc2di5tmthrbxjh7vnq3v4ymicqod7eucccblyfs4ncpr7o' ] ]);
 
 export async function seed (db: Knex) {
 	// Insert users

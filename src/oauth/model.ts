@@ -222,10 +222,15 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 		};
 
 		if (client.secrets.length && clientSecret) {
-			const bytes = base32.decode(clientSecret.toUpperCase());
-			const hashedSecret = createHash('sha256').update(bytes).digest('base64');
+			let bytes;
 
-			if (!client.secrets.includes(hashedSecret)) {
+			try {
+				bytes = base32.decode(clientSecret.toUpperCase());
+			} catch {
+				bytes = null;
+			}
+
+			if (!bytes || !client.secrets.includes(createHash('sha256').update(bytes).digest('base64'))) {
 				throw new InvalidClientError('Invalid client: client credentials are invalid');
 			}
 		}
