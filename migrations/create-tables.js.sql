@@ -1,6 +1,6 @@
-CREATE TABLE IF NOT EXISTS directus_users (
-	id CHAR(36) PRIMARY KEY,
-	github_username VARCHAR(255)
+CREATE TABLE IF NOT EXISTS `directus_users` (
+	`id` CHAR(36) PRIMARY KEY,
+	`github_username` VARCHAR(255)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `gp_apps` (
@@ -63,4 +63,4 @@ CREATE TABLE `gp_apps_approvals` (
 	CONSTRAINT `unique_user_app` UNIQUE (`user`, `app`),
 	CONSTRAINT `gp_apps_approvals_app_foreign` FOREIGN KEY (`app`) REFERENCES `gp_apps` (`id`) ON DELETE CASCADE,
 	CONSTRAINT `gp_apps_approvals_user_foreign` FOREIGN KEY (`user`) REFERENCES `directus_users` (`id`) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

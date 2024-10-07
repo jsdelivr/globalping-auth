@@ -18,11 +18,17 @@ export default function wallaby (wallaby) {
 		tests: [
 			'test/tests/**/*.test.ts',
 		],
-
+		setup (w) {
+			const path = require('path');
+			w.testFramework.files.unshift(path.resolve(process.cwd(), 'test/setup.js'));
+			const mocha = w.testFramework;
+			mocha.timeout(10000);
+		},
 		env: {
 			type: 'node',
 			params: {
 				runner: '--experimental-specifier-resolution=node',
+				env: 'NODE_ENV=test;NEW_RELIC_ENABLED=false;NEW_RELIC_LOG_ENABLED=false',
 			},
 		},
 		compilers: {
