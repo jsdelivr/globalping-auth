@@ -1,6 +1,7 @@
 import { promisify } from 'node:util';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { base32 } from '@scure/base';
+import _ from 'lodash';
 
 import {
 	AuthorizationCode,
@@ -162,7 +163,7 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 				id: randomUUID(),
 				user: code.user.id,
 				app: code.client.id,
-				scopes: code.scope ? JSON.stringify(code.scope) : '[]',
+				scopes: JSON.stringify(code.scopesToApprove),
 			});
 		}
 
@@ -180,9 +181,11 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 
 		let isApprovalRequired = true;
 		let rememberApproval = false;
+		let scopesToApprove: string[] = [];
 
 		if (client.secrets.length > 0) {
 			rememberApproval = true;
+			scopesToApprove = code.scope ?? [];
 			const approval = await this.sql(OAuthModel.appsAprovalsTable).where({ user: user.id, app: client.id }).select<Approval>([ 'scopes' ]).first() || null;
 
 			if (approval) {
@@ -190,6 +193,8 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 
 				if (code.scope && code.scope.every(s => approvedScopes.includes(s))) {
 					isApprovalRequired = false;
+				} else {
+					scopesToApprove = _.union(approvedScopes, code.scope);
 				}
 			}
 		}
@@ -202,6 +207,7 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 		} else {
 			codeToSave['publicCodeId'] = await this.generateAccessToken();
 			codeToSave['rememberApproval'] = rememberApproval;
+			codeToSave['scopesToApprove'] = scopesToApprove;
 			key = this.getPendingAuthorizationCodeRedisKey(codeToSave['publicCodeId'] as string);
 		}
 
