@@ -26,6 +26,7 @@ before(async () => {
 
 const dropAllTables = async (sql: Knex) => {
 	const allTables = [
+		'gp_apps_approvals',
 		'gp_tokens',
 		'gp_apps',
 		'directus_users',
