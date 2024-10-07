@@ -18,7 +18,10 @@ before(async () => {
 
 	await dropAllTables(sql);
 	await sql.migrate.latest();
-	await sql.seed.run();
+
+	await sql.seed.run({
+		loadExtensions: [ '.js' ],
+	});
 
 	nock.disableNetConnect();
 	nock.enableNetConnect('127.0.0.1');
