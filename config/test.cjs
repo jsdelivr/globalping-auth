@@ -17,4 +17,7 @@ module.exports = {
 			multipleStatements: true,
 		},
 	},
+	auth: {
+		validScopes: [ 'measurements', 'probes' ],
+	},
 };

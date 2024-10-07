@@ -10,7 +10,7 @@ import type { Server } from 'node:http';
 
 import { client as sql } from '../../../src/lib/sql/client.js';
 import { getTestServer } from '../../utils/server.js';
-import { apps, secrets, users } from '../../../seeds/test/index.js';
+import { clients, secrets, users } from '../../../seeds/test/index.js';
 
 const sessionSecret = config.get<string>('server.session.cookieSecret');
 
@@ -20,8 +20,8 @@ const introspectionEndpoint = '/oauth/token/introspect';
 const authorizationEndpoint = '/oauth/authorize';
 
 const user1 = users[0]!;
-const client1 = apps[0]!;
-const client2 = apps[1]!;
+const client1 = clients[0]!;
+const client2 = clients[1]!;
 
 describe('OAuth', () => {
 	let app: Server;
@@ -34,7 +34,7 @@ describe('OAuth', () => {
 		return new URL(location).pathname.replace('authorize', 'oauth/approve');
 	};
 
-	const defaultAuthorizationRequest = (client: typeof apps[number], headers = {}, query = {}) => {
+	const defaultAuthorizationRequest = (client: typeof clients[number], headers = {}, query = {}) => {
 		return requestAgent
 			.get(authorizationEndpoint)
 			.set('Cookie', `dash_session_token=${user1Cookie}`)
@@ -51,7 +51,7 @@ describe('OAuth', () => {
 			});
 	};
 
-	const getAuthorizationCode = async (client: typeof apps[number]): Promise<string> => {
+	const getAuthorizationCode = async (client: typeof clients[number]): Promise<string> => {
 		const res1 = await defaultAuthorizationRequest(client);
 
 		expect(res1.status).to.equal(302);
@@ -69,7 +69,7 @@ describe('OAuth', () => {
 		return new URL(res2.headers['location']!).searchParams.get('code')!;
 	};
 
-	const defaultTokenRequest = async (client: typeof apps[number], headers = {}, body = {}) => {
+	const defaultTokenRequest = async (client: typeof clients[number], headers = {}, body = {}) => {
 		const authorizationCode = await getAuthorizationCode(client);
 
 		return requestAgent
@@ -106,9 +106,62 @@ describe('OAuth', () => {
 
 	describe('Authorization Endpoint', () => {
 		it('should successfully authorize with correct parameters and user approval', async () => {
-			expect(apps).to.have.length.greaterThan(1);
+			expect(clients).to.have.length.greaterThan(1);
 
-			await Bluebird.map(apps, app => getAuthorizationCode(app));
+			await Bluebird.map(clients, client => getAuthorizationCode(client));
+		});
+
+		it('should remember user approval and return code right away on second request', async () => {
+			await getAuthorizationCode(client2);
+			const res = await defaultAuthorizationRequest(client2);
+
+			expect(res.status).to.equal(302);
+			expect(res.headers['location']).to.include(`https://example.com/two/callback`);
+			expect(res.headers['location']).to.include(`code=`);
+			expect(res.headers['location']).to.include(`state=someRandomState`);
+		});
+
+		it('should not remember user approval for client without secret', async () => {
+			await getAuthorizationCode(client1);
+			const res = await defaultAuthorizationRequest(client1);
+
+			expect(res.status).to.equal(302);
+			expect(res.headers['location']).to.include(`https://dash.globalping.io/authorize/`);
+		});
+
+		it('should require approval if the scope changed, then store all approved scopes', async () => {
+			await getAuthorizationCode(client2);
+			const res1 = await defaultAuthorizationRequest(client2, {}, {
+				scope: 'probes',
+			});
+
+			expect(res1.status).to.equal(302);
+			expect(res1.headers['location']).to.include(`https://dash.globalping.io/authorize/`);
+
+			const res2 = await requestAgent
+				.post(getApprovalUrl(res1.headers['location']!))
+				.set('Cookie', `dash_session_token=${user1Cookie}`)
+				.send({ approved: 1 });
+
+			expect(res2.status).to.equal(302);
+			expect(res2.headers['location']).to.include(`code=`);
+			expect(res2.headers['location']).to.include(`state=someRandomState`);
+
+			const res3 = await defaultAuthorizationRequest(client2, {}, {
+				scope: 'probes',
+			});
+			expect(res3.status).to.equal(302);
+			expect(res3.headers['location']).to.include(`https://example.com/two/callback`);
+			expect(res3.headers['location']).to.include(`code=`);
+			expect(res3.headers['location']).to.include(`state=someRandomState`);
+
+			const res4 = await defaultAuthorizationRequest(client2, {}, {
+				scope: 'measurements probes',
+			});
+			expect(res4.status).to.equal(302);
+			expect(res4.headers['location']).to.include(`https://example.com/two/callback`);
+			expect(res4.headers['location']).to.include(`code=`);
+			expect(res4.headers['location']).to.include(`state=someRandomState`);
 		});
 
 		it('should fail authorization if the user cancels the approval', async () => {
@@ -411,7 +464,7 @@ describe('OAuth', () => {
 			return sql('gp_tokens').where({ value: createHash('sha256').update(base32.decode(token.toUpperCase())).digest('base64') }).first();
 		};
 
-		const revokeToken = async (token: string | undefined, client: typeof apps[number]) => {
+		const revokeToken = async (token: string | undefined, client: typeof clients[number]) => {
 			return requestAgent
 				.post(revocationEndpoint)
 				.set('Content-Type', 'application/x-www-form-urlencoded')
@@ -483,7 +536,7 @@ describe('OAuth', () => {
 	});
 
 	describe('Token Introspection', () => {
-		const introspectToken = async (token: string | undefined, client: typeof apps[number]) => {
+		const introspectToken = async (token: string | undefined, client: typeof clients[number]) => {
 			return requestAgent
 				.post(introspectionEndpoint)
 				.set('Content-Type', 'application/x-www-form-urlencoded')

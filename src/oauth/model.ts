@@ -1,3 +1,4 @@
+import config from 'config';
 import { promisify } from 'node:util';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { base32 } from '@scure/base';
@@ -37,7 +38,7 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 	static appsAprovalsTable = 'gp_apps_approvals';
 	static usersTable = 'directus_users';
 	static tokensTable = 'gp_tokens';
-	static validScopes = [ 'measurements' ];
+	static validScopes = config.get<string[]>('auth.validScopes');
 
 	constructor (
 		private readonly redis: RedisClient,
