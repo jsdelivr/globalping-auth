@@ -1,5 +1,5 @@
 import { promisify } from 'node:util';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { base32 } from '@scure/base';
 
 import {
@@ -26,12 +26,14 @@ import {
 	PublicAuthorizationCodeDetails,
 	Token,
 	User,
+	type Approval,
 } from './types.js';
 
 const getRandomBytes = promisify(randomBytes);
 
 export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenModel {
 	static appsTable = 'gp_apps';
+	static appsAprovalsTable = 'gp_apps_approvals';
 	static usersTable = 'directus_users';
 	static tokensTable = 'gp_tokens';
 	static validScopes = [ 'measurements' ];
@@ -155,6 +157,15 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 			return code;
 		}
 
+		if (code.rememberApproval) {
+			await this.sql(OAuthModel.appsAprovalsTable).upsert({
+				id: randomUUID(),
+				user: code.user.id,
+				app: code.client.id,
+				scopes: code.scope ? JSON.stringify(code.scope) : '[]',
+			});
+		}
+
 		const newKey = this.getApprovedAuthorizationCodeRedisKey(code.authorizationCode);
 		await this.redis.rename(oldKey, newKey);
 
@@ -167,7 +178,22 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 			throw new InvalidRequestError('Missing parameter: `codeChallenge`');
 		}
 
-		const isApprovalRequired = true; // TODO: remember approval for trusted clients
+		let isApprovalRequired = true;
+		let rememberApproval = false;
+
+		if (client.secrets.length > 0) {
+			rememberApproval = true;
+			const approval = await this.sql(OAuthModel.appsAprovalsTable).where({ user: user.id, app: client.id }).select<Approval>([ 'scopes' ]).first() || null;
+
+			if (approval) {
+				const approvedScopes = JSON.parse(approval.scopes) as string[];
+
+				if (code.scope && code.scope.every(s => approvedScopes.includes(s))) {
+					isApprovalRequired = false;
+				}
+			}
+		}
+
 		const codeToSave = code as AuthorizationCode;
 		let key;
 
@@ -175,20 +201,21 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 			key = this.getApprovedAuthorizationCodeRedisKey(codeToSave.authorizationCode);
 		} else {
 			codeToSave['publicCodeId'] = await this.generateAccessToken();
+			codeToSave['rememberApproval'] = rememberApproval;
 			key = this.getPendingAuthorizationCodeRedisKey(codeToSave['publicCodeId'] as string);
 		}
 
 		await Promise.all([
 			this.redis.json.set(key, '$', {
-				...code,
+				...codeToSave,
 				client: { id: client.id, name: client.name, owner: { name: client.owner_name, url: client.owner_url } },
 				user: { id: user.id, $state: user.$state },
 			}),
-			this.redis.pExpireAt(key, code.expiresAt),
+			this.redis.pExpireAt(key, codeToSave.expiresAt),
 		]);
 
 		return {
-			...code,
+			...codeToSave,
 			client,
 			user,
 		};
