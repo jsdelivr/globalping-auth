@@ -20,7 +20,7 @@ before(async () => {
 	await sql.migrate.latest();
 
 	await sql.seed.run({
-		loadExtensions: [ '.js' ],
+		loadExtensions: [ '.js', '.ts' ],
 	});
 
 	nock.disableNetConnect();
