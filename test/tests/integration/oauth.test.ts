@@ -100,6 +100,10 @@ describe('OAuth', () => {
 			.sign(Buffer.from(sessionSecret));
 	});
 
+	beforeEach(async () => {
+		await sql('gp_apps_approvals').del();
+	});
+
 	describe('Authorization Endpoint', () => {
 		it('should successfully authorize with correct parameters and user approval', async () => {
 			expect(apps).to.have.length.greaterThan(1);
@@ -231,21 +235,25 @@ describe('OAuth', () => {
 			expect(res1.status).to.equal(400);
 			expect(res1.body).to.have.property('error', 'invalid_client');
 			expect(res1.body).to.have.property('error_description').that.includes('client credentials are invalid');
+		});
 
-			const res2 = await defaultTokenRequest(client2, {}, {
+		it('should fail with wrong client_secret if the client has one', async () => {
+			const res = await defaultTokenRequest(client2, {}, {
 				client_secret: 'wrongSecretValue23456723456723456723456723456723',
 			});
 
-			expect(res2.status).to.equal(400);
-			expect(res2.body).to.have.property('error', 'invalid_client');
-			expect(res2.body).to.have.property('error_description').that.includes('client credentials are invalid');
+			expect(res.status).to.equal(400);
+			expect(res.body).to.have.property('error', 'invalid_client');
+			expect(res.body).to.have.property('error_description').that.includes('client credentials are invalid');
+		});
 
-			const res3 = await defaultTokenRequest(client2, {}, {
+		it('should pass with valid client secret', async () => {
+			const res = await defaultTokenRequest(client2, {}, {
 				client_secret: secrets.get(client2),
 			});
 
-			expect(res3.status).to.equal(200);
-			expect(res3.body).to.have.property('access_token');
+			expect(res.status).to.equal(200);
+			expect(res.body).to.have.property('access_token');
 		});
 
 		it('should fail with unsupported grant_type', async () => {
