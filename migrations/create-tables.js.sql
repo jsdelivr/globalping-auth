@@ -1,6 +1,6 @@
-CREATE TABLE IF NOT EXISTS directus_users (
-	id CHAR(36) PRIMARY KEY,
-	github_username VARCHAR(255)
+CREATE TABLE IF NOT EXISTS `directus_users` (
+	`id` CHAR(36) PRIMARY KEY,
+	`github_username` VARCHAR(255)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `gp_apps` (
@@ -50,4 +50,17 @@ CREATE TABLE `gp_tokens` (
 	CONSTRAINT `gp_tokens_parent_foreign` FOREIGN KEY (`parent`) REFERENCES `gp_tokens` (`id`) ON DELETE CASCADE,
 	CONSTRAINT `gp_tokens_user_created_foreign` FOREIGN KEY (`user_created`) REFERENCES `directus_users` (`id`) ON DELETE CASCADE,
 	CONSTRAINT `gp_tokens_user_updated_foreign` FOREIGN KEY (`user_updated`) REFERENCES `directus_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `gp_apps_approvals` (
+	`id` char(36) NOT NULL,
+	`date_created` timestamp NULL DEFAULT NULL,
+	`date_updated` timestamp NULL DEFAULT NULL,
+	`user` char(36) NOT NULL,
+	`app` char(36) NOT NULL,
+	`scopes` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '[]' CHECK (json_valid(`scopes`)),
+	PRIMARY KEY (`id`),
+	CONSTRAINT `unique_user_app` UNIQUE (`user`, `app`),
+	CONSTRAINT `gp_apps_approvals_app_foreign` FOREIGN KEY (`app`) REFERENCES `gp_apps` (`id`) ON DELETE CASCADE,
+	CONSTRAINT `gp_apps_approvals_user_foreign` FOREIGN KEY (`user`) REFERENCES `directus_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

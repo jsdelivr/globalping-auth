@@ -6,7 +6,7 @@ export const users = [
 	{ id: 'dfe6d9d6-eaa0-4f7d-aa8d-439a9efeef68' },
 ];
 
-export const apps = [
+export const clients = [
 	{
 		id: '74eb66bd-1e4c-4c84-b275-e5b477da2087',
 		user_created: users[0]!.id,
@@ -27,14 +27,14 @@ export const apps = [
 	},
 ];
 
-export const secrets = new Map([ [ apps[1], 'tzc2di5tmthrbxjh7vnq3v4ymicqod7eucccblyfs4ncpr7o' ] ]);
+export const secrets = new Map([ [ clients[1], 'tzc2di5tmthrbxjh7vnq3v4ymicqod7eucccblyfs4ncpr7o' ] ]);
 
 export async function seed (db: Knex) {
 	// Insert users
 	await db('directus_users').insert(users);
 
-	// Insert apps
-	await db('gp_apps').insert(apps);
+	// Insert clients
+	await db('gp_apps').insert(clients);
 
 	// Insert tokens
 	const tokens = [
@@ -49,7 +49,7 @@ export async function seed (db: Knex) {
 			user_created: users[0]!.id,
 			user_updated: users[0]!.id,
 			value: createHash('sha256').update('token1value').digest('base64'),
-			app_id: apps[0]!.id,
+			app_id: clients[0]!.id,
 			scopes: JSON.stringify([ 'measurements' ]),
 			type: 'access_token',
 			parent: null,
@@ -65,7 +65,7 @@ export async function seed (db: Knex) {
 			user_created: users[0]!.id,
 			user_updated: users[0]!.id,
 			value: createHash('sha256').update('token2value').digest('base64'),
-			app_id: apps[1]!.id,
+			app_id: clients[1]!.id,
 			scopes: JSON.stringify([ 'measurements' ]),
 			type: 'refresh_token',
 			parent: null,
@@ -81,7 +81,7 @@ export async function seed (db: Knex) {
 			user_created: users[1]!.id,
 			user_updated: users[1]!.id,
 			value: createHash('sha256').update('token3value').digest('base64'),
-			app_id: apps[0]!.id,
+			app_id: clients[0]!.id,
 			scopes: JSON.stringify([ 'measurements' ]),
 			type: 'access_token',
 			parent: 2,
@@ -97,7 +97,7 @@ export async function seed (db: Knex) {
 			user_created: users[1]!.id,
 			user_updated: users[1]!.id,
 			value: createHash('sha256').update('token4value').digest('base64'),
-			app_id: apps[1]!.id,
+			app_id: clients[1]!.id,
 			scopes: JSON.stringify([ 'measurements' ]),
 			type: 'refresh_token',
 			parent: null,

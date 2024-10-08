@@ -18,7 +18,10 @@ before(async () => {
 
 	await dropAllTables(sql);
 	await sql.migrate.latest();
-	await sql.seed.run();
+
+	await sql.seed.run({
+		loadExtensions: [ '.js', '.ts' ],
+	});
 
 	nock.disableNetConnect();
 	nock.enableNetConnect('127.0.0.1');
@@ -26,6 +29,7 @@ before(async () => {
 
 const dropAllTables = async (sql: Knex) => {
 	const allTables = [
+		'gp_apps_approvals',
 		'gp_tokens',
 		'gp_apps',
 		'directus_users',

@@ -1,6 +1,8 @@
+import config from 'config';
 import { promisify } from 'node:util';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { base32 } from '@scure/base';
+import _ from 'lodash';
 
 import {
 	AuthorizationCode,
@@ -26,15 +28,17 @@ import {
 	PublicAuthorizationCodeDetails,
 	Token,
 	User,
+	type Approval,
 } from './types.js';
 
 const getRandomBytes = promisify(randomBytes);
 
 export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenModel {
 	static appsTable = 'gp_apps';
+	static appsAprovalsTable = 'gp_apps_approvals';
 	static usersTable = 'directus_users';
 	static tokensTable = 'gp_tokens';
-	static validScopes = [ 'measurements' ];
+	static validScopes = config.get<string[]>('auth.validScopes');
 
 	constructor (
 		private readonly redis: RedisClient,
@@ -155,6 +159,15 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 			return code;
 		}
 
+		if (code.rememberApproval) {
+			await this.sql(OAuthModel.appsAprovalsTable).upsert({
+				id: randomUUID(),
+				user: code.user.id,
+				app: code.client.id,
+				scopes: JSON.stringify(code.scopesToApprove),
+			});
+		}
+
 		const newKey = this.getApprovedAuthorizationCodeRedisKey(code.authorizationCode);
 		await this.redis.rename(oldKey, newKey);
 
@@ -167,7 +180,26 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 			throw new InvalidRequestError('Missing parameter: `codeChallenge`');
 		}
 
-		const isApprovalRequired = true; // TODO: remember approval for trusted clients
+		let isApprovalRequired = true;
+		let rememberApproval = false;
+		let scopesToApprove: string[] = [];
+
+		if (client.secrets.length > 0) {
+			rememberApproval = true;
+			scopesToApprove = code.scope ?? [];
+			const approval = await this.sql(OAuthModel.appsAprovalsTable).where({ user: user.id, app: client.id }).select<Approval>([ 'scopes' ]).first() || null;
+
+			if (approval) {
+				const approvedScopes = JSON.parse(approval.scopes) as string[];
+
+				if (code.scope && code.scope.every(s => approvedScopes.includes(s))) {
+					isApprovalRequired = false;
+				} else {
+					scopesToApprove = _.union(approvedScopes, code.scope);
+				}
+			}
+		}
+
 		const codeToSave = code as AuthorizationCode;
 		let key;
 
@@ -175,20 +207,22 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 			key = this.getApprovedAuthorizationCodeRedisKey(codeToSave.authorizationCode);
 		} else {
 			codeToSave['publicCodeId'] = await this.generateAccessToken();
+			codeToSave['rememberApproval'] = rememberApproval;
+			codeToSave['scopesToApprove'] = scopesToApprove;
 			key = this.getPendingAuthorizationCodeRedisKey(codeToSave['publicCodeId'] as string);
 		}
 
 		await Promise.all([
 			this.redis.json.set(key, '$', {
-				...code,
+				...codeToSave,
 				client: { id: client.id, name: client.name, owner: { name: client.owner_name, url: client.owner_url } },
 				user: { id: user.id, $state: user.$state },
 			}),
-			this.redis.pExpireAt(key, code.expiresAt),
+			this.redis.pExpireAt(key, codeToSave.expiresAt),
 		]);
 
 		return {
-			...code,
+			...codeToSave,
 			client,
 			user,
 		};
@@ -208,31 +242,34 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 			throw new InvalidClientError('Invalid client: client is invalid');
 		}
 
-		const client = {
+		const client: ClientWithCredentials = {
 			id: row.id,
 			name: row.name,
 			secrets: JSON.parse(row.secrets) as string[],
 			owner_name: row.owner_name,
 			owner_url: row.owner_url,
-			requestSecret: clientSecret,
+			requestSecret: null,
 			redirectUris: JSON.parse(row.redirect_urls) as string[],
 			grants: JSON.parse(row.grants) as string[],
 			...row.access_token_lifetime ? { accessTokenLifetime: row.access_token_lifetime } : {},
 			...row.refresh_token_lifetime ? { refreshTokenLifetime: row.refresh_token_lifetime } : {},
 		};
 
-		if (client.secrets.length && clientSecret) {
-			let bytes;
+		if (client.secrets.length > 0 && clientSecret) {
+			let requestSecret;
 
 			try {
-				bytes = base32.decode(clientSecret.toUpperCase());
+				const bytes = base32.decode(clientSecret.toUpperCase());
+				requestSecret = createHash('sha256').update(bytes).digest('base64');
 			} catch {
-				bytes = null;
+				requestSecret = null;
 			}
 
-			if (!bytes || !client.secrets.includes(createHash('sha256').update(bytes).digest('base64'))) {
+			if (!requestSecret || !client.secrets.includes(requestSecret)) {
 				throw new InvalidClientError('Invalid client: client credentials are invalid');
 			}
+
+			client.requestSecret = requestSecret;
 		}
 
 		return client;
@@ -263,6 +300,10 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 	async saveToken (token: Token, client: ClientWithCredentials, user: User): Promise<TokenWithClientUser | null> {
 		const now = new Date();
 		let refreshTokenId;
+
+		if (client.secrets.length > 0 && (!client.requestSecret || !client.secrets.includes(client.requestSecret))) {
+			throw new InvalidClientError('Invalid client: client credentials are invalid');
+		}
 
 		if (token.refreshToken) {
 			const refreshBytes = base32.decode(token.refreshToken.toUpperCase());
