@@ -300,6 +300,16 @@ describe('OAuth', () => {
 			expect(res.body).to.have.property('error_description').that.includes('client credentials are invalid');
 		});
 
+		it('should fail with missing client_secret if the client has one', async () => {
+			const res = await defaultTokenRequest(client2, {}, {
+				client_secret: undefined,
+			});
+
+			expect(res.status).to.equal(400);
+			expect(res.body).to.have.property('error', 'invalid_client');
+			expect(res.body).to.have.property('error_description').that.includes('client credentials are invalid');
+		});
+
 		it('should pass with valid client secret', async () => {
 			const res = await defaultTokenRequest(client2, {}, {
 				client_secret: secrets.get(client2),
