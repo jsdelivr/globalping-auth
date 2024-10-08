@@ -242,31 +242,34 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 			throw new InvalidClientError('Invalid client: client is invalid');
 		}
 
-		const client = {
+		const client: ClientWithCredentials = {
 			id: row.id,
 			name: row.name,
 			secrets: JSON.parse(row.secrets) as string[],
 			owner_name: row.owner_name,
 			owner_url: row.owner_url,
-			requestSecret: clientSecret,
+			requestSecret: null,
 			redirectUris: JSON.parse(row.redirect_urls) as string[],
 			grants: JSON.parse(row.grants) as string[],
 			...row.access_token_lifetime ? { accessTokenLifetime: row.access_token_lifetime } : {},
 			...row.refresh_token_lifetime ? { refreshTokenLifetime: row.refresh_token_lifetime } : {},
 		};
 
-		if (client.secrets.length && clientSecret) {
-			let bytes;
+		if (client.secrets.length > 0 && clientSecret) {
+			let requestSecret;
 
 			try {
-				bytes = base32.decode(clientSecret.toUpperCase());
+				const bytes = base32.decode(clientSecret.toUpperCase());
+				requestSecret = createHash('sha256').update(bytes).digest('base64');
 			} catch {
-				bytes = null;
+				requestSecret = null;
 			}
 
-			if (!bytes || !client.secrets.includes(createHash('sha256').update(bytes).digest('base64'))) {
+			if (!requestSecret || !client.secrets.includes(requestSecret)) {
 				throw new InvalidClientError('Invalid client: client credentials are invalid');
 			}
+
+			client.requestSecret = requestSecret;
 		}
 
 		return client;
@@ -297,6 +300,10 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 	async saveToken (token: Token, client: ClientWithCredentials, user: User): Promise<TokenWithClientUser | null> {
 		const now = new Date();
 		let refreshTokenId;
+
+		if (client.secrets.length > 0 && (!client.requestSecret || !client.secrets.includes(client.requestSecret))) {
+			throw new InvalidClientError('Invalid client: client credentials are invalid');
+		}
 
 		if (token.refreshToken) {
 			const refreshBytes = base32.decode(token.refreshToken.toUpperCase());

@@ -39,6 +39,7 @@ export default function wallaby (wallaby) {
 		preprocessors: {
 			'**/*.ts': file => file.content.replace(/\.ts/g, '.js'),
 		},
+		workers: { restart: true, initial: 1, regular: 1 },
 		runMode: 'onsave',
 	};
 }
