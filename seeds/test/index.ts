@@ -25,6 +25,14 @@ export const clients = [
 		redirect_urls: JSON.stringify([ 'https://example.com/two/callback' ]),
 		grants: JSON.stringify([ 'authorization_code', 'refresh_token' ]),
 	},
+	{
+		id: '3de73daa-3943-421c-9847-ce6ccc8e69c2',
+		user_created: users[2]!.id,
+		name: 'Slack App',
+		secrets: '[]',
+		redirect_urls: JSON.stringify([ 'https://example.com/three/callback' ]),
+		grants: JSON.stringify([ 'client_credentials' ]),
+	},
 ];
 
 export const secrets = new Map([ [ clients[1], 'tzc2di5tmthrbxjh7vnq3v4ymicqod7eucccblyfs4ncpr7o' ] ]);

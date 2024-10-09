@@ -25,6 +25,7 @@ import {
 	InternalToken,
 	InternalTokenRow,
 	InternalUser,
+	ClientCredentialsUser,
 	PublicAuthorizationCodeDetails,
 	Token,
 	User,
@@ -277,6 +278,10 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 
 	async getUser (id: string): Promise<InternalUser | null> {
 		return await this.sql(OAuthModel.usersTable).where({ id }).select<InternalUser>([ 'id', 'github_username' ]).first() || null;
+	}
+
+	getUserFromClient (): Promise<ClientCredentialsUser | null> {
+		return Promise.resolve({ id: null });
 	}
 
 	async revokeToken (token: RefreshToken): Promise<boolean> {
