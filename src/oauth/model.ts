@@ -25,6 +25,7 @@ import {
 	InternalToken,
 	InternalTokenRow,
 	InternalUser,
+	ClientCredentialsUser,
 	PublicAuthorizationCodeDetails,
 	Token,
 	User,
@@ -277,6 +278,14 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 
 	async getUser (id: string): Promise<InternalUser | null> {
 		return await this.sql(OAuthModel.usersTable).where({ id }).select<InternalUser>([ 'id', 'github_username' ]).first() || null;
+	}
+
+	async getUserFromClient (client: ClientWithCredentials): Promise<ClientCredentialsUser | null> {
+		if (client.secrets.length === 0) {
+			throw new InvalidClientError('Invalid client: client should have secret');
+		}
+
+		return { id: null };
 	}
 
 	async revokeToken (token: RefreshToken): Promise<boolean> {

@@ -47,6 +47,10 @@ export type InternalUser = {
 	github_username: string;
 }
 
+export type ClientCredentialsUser = {
+	id: null;
+}
+
 export type OAuthRouteOptions = {
 	dashHost: string;
 	docsHost: string;

@@ -22,6 +22,7 @@ const authorizationEndpoint = '/oauth/authorize';
 const user1 = users[0]!;
 const client1 = clients[0]!;
 const client2 = clients[1]!;
+const client3 = clients[2]!;
 
 describe('OAuth', () => {
 	let app: Server;
@@ -106,9 +107,7 @@ describe('OAuth', () => {
 
 	describe('Authorization Endpoint', () => {
 		it('should successfully authorize with correct parameters and user approval', async () => {
-			expect(clients).to.have.length.greaterThan(1);
-
-			await Bluebird.map(clients, client => getAuthorizationCode(client));
+			await Bluebird.map([ client1, client2 ], client => getAuthorizationCode(client));
 		});
 
 		it('should remember user approval and return code right away on second request', async () => {
@@ -466,6 +465,90 @@ describe('OAuth', () => {
 			expect(res.status).to.equal(400);
 			expect(res.body).to.have.property('error', 'invalid_request');
 			expect(res.body).to.have.property('error_description').that.includes('refresh_token');
+		});
+	});
+
+	describe('Client Credentials Grant', () => {
+		it('should successfully authorize the client and return access token', async () => {
+			const res = await requestAgent
+				.post(tokenEndpoint)
+				.set('Content-Type', 'application/x-www-form-urlencoded')
+				.send({
+					client_id: client3.id,
+					client_secret: secrets.get(client3),
+					grant_type: 'client_credentials',
+					scope: 'measurements',
+				});
+
+			expect(res.status).to.equal(200);
+			expect(res.body).to.have.property('access_token');
+			expect(res.body).to.not.have.property('refresh_token');
+			expect(res.body).to.have.property('expires_in');
+			expect(res.body).to.have.property('token_type', 'Bearer');
+			expect(res.body).to.have.property('scope', 'measurements');
+		});
+
+		it('should fail with wrong client_secret', async () => {
+			const res = await requestAgent
+				.post(tokenEndpoint)
+				.set('Content-Type', 'application/x-www-form-urlencoded')
+				.send({
+					client_id: client3.id,
+					client_secret: 'wrongSecretValue23456723456723456723456723456723',
+					grant_type: 'client_credentials',
+					scope: 'measurements',
+				});
+
+			expect(res.status).to.equal(400);
+			expect(res.body).to.have.property('error', 'invalid_client');
+			expect(res.body).to.have.property('error_description').that.includes('client credentials are invalid');
+		});
+
+		it('should fail with missing client_secret', async () => {
+			const res = await requestAgent
+				.post(tokenEndpoint)
+				.set('Content-Type', 'application/x-www-form-urlencoded')
+				.send({
+					client_id: client3.id,
+					grant_type: 'client_credentials',
+					scope: 'measurements',
+				});
+
+			expect(res.status).to.equal(400);
+			expect(res.body).to.have.property('error', 'invalid_client');
+			expect(res.body).to.have.property('error_description').that.includes('cannot retrieve client credentials');
+		});
+
+		it('should fail if client_credentials grant type is not specified for the client', async () => {
+			const res = await requestAgent
+				.post(tokenEndpoint)
+				.set('Content-Type', 'application/x-www-form-urlencoded')
+				.send({
+					client_id: client2.id,
+					client_secret: secrets.get(client2),
+					grant_type: 'client_credentials',
+					scope: 'measurements',
+				});
+
+			expect(res.status).to.equal(400);
+			expect(res.body).to.have.property('error', 'unauthorized_client');
+			expect(res.body).to.have.property('error_description').that.includes('`grant_type` is invalid');
+		});
+
+		it('should fail for client without secret', async () => {
+			const res = await requestAgent
+				.post(tokenEndpoint)
+				.set('Content-Type', 'application/x-www-form-urlencoded')
+				.send({
+					client_id: client1.id,
+					client_secret: 'randomSecretValue2345672345672345672345672345672',
+					grant_type: 'client_credentials',
+					scope: 'measurements',
+				});
+
+			expect(res.status).to.equal(400);
+			expect(res.body).to.have.property('error', 'invalid_client');
+			expect(res.body).to.have.property('error_description').that.includes('client should have secret');
 		});
 	});
 

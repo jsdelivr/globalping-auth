@@ -13,7 +13,7 @@ export const clients = [
 		name: 'App One',
 		secrets: '[]',
 		redirect_urls: JSON.stringify([ 'https://example.com/one/callback' ]),
-		grants: JSON.stringify([ 'authorization_code', 'refresh_token' ]),
+		grants: JSON.stringify([ 'authorization_code', 'refresh_token', 'client_credentials' ]),
 	},
 	{
 		id: 'b2a50a7e-6dc5-423d-864e-173ea690992e',
@@ -25,9 +25,20 @@ export const clients = [
 		redirect_urls: JSON.stringify([ 'https://example.com/two/callback' ]),
 		grants: JSON.stringify([ 'authorization_code', 'refresh_token' ]),
 	},
+	{
+		id: '3de73daa-3943-421c-9847-ce6ccc8e69c2',
+		user_created: users[1]!.id,
+		name: 'Slack App',
+		secrets: '["OSMOYY6tV16Kc0l+BB5ml4eKXFf4JaqARFMCdudKU98="]',
+		redirect_urls: JSON.stringify([ 'https://example.com/three/callback' ]),
+		grants: JSON.stringify([ 'client_credentials' ]),
+	},
 ];
 
-export const secrets = new Map([ [ clients[1], 'tzc2di5tmthrbxjh7vnq3v4ymicqod7eucccblyfs4ncpr7o' ] ]);
+export const secrets = new Map([
+	[ clients[1], 'tzc2di5tmthrbxjh7vnq3v4ymicqod7eucccblyfs4ncpr7o' ],
+	[ clients[2], 'bgygsrjvvwjdj73dmq7bdhrn72s4opexedf4ksjvmi6gir7a' ],
+]);
 
 export async function seed (db: Knex) {
 	// Insert users
