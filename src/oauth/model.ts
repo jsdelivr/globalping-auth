@@ -280,12 +280,12 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 		return await this.sql(OAuthModel.usersTable).where({ id }).select<InternalUser>([ 'id', 'github_username' ]).first() || null;
 	}
 
-	getUserFromClient (client: ClientWithCredentials): Promise<ClientCredentialsUser | null> {
+	async getUserFromClient (client: ClientWithCredentials): Promise<ClientCredentialsUser | null> {
 		if (client.secrets.length === 0) {
 			throw new InvalidClientError('Invalid client: client should have secret');
 		}
 
-		return Promise.resolve({ id: null });
+		return { id: null };
 	}
 
 	async revokeToken (token: RefreshToken): Promise<boolean> {
