@@ -1,3 +1,4 @@
+import config from 'config';
 import { ExtendedContext } from '../../types.js';
 import { OAuthRouteOptions } from '../types.js';
 
@@ -9,9 +10,7 @@ export const metadataGet = (options: OAuthRouteOptions) => {
 			token_endpoint: `${options.serverHost}/oauth/token`,
 			introspection_endpoint: `${options.serverHost}/oauth/token/introspect`,
 			revocation_endpoint: `${options.serverHost}/oauth/token/revoke`,
-			scopes_supported: [
-				'measurements',
-			],
+			scopes_supported: config.get<string[]>('auth.validScopes'),
 			response_types_supported: [
 				'code',
 				'token',
@@ -21,6 +20,7 @@ export const metadataGet = (options: OAuthRouteOptions) => {
 			],
 			grant_types_supported: [
 				'authorization_code',
+				'client_credentials',
 				'refresh_token',
 			],
 			token_endpoint_auth_methods_supported: [
