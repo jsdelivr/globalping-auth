@@ -8,7 +8,7 @@ type StateObject = { state?: string } | undefined;
 const handle = (options: OAuthRouteOptions) => {
 	return async (ctx: ExtendedContext): Promise<void> => {
 		if (!ctx.state.user || ctx.state.user.authMode !== 'cookie') {
-			return ctx.redirect(`${options.directusHost}/auth/login/github?redirect=${options.serverHost}${encodeURIComponent(ctx.url)}`);
+			return ctx.redirect(`${options.directusHost}/auth/login/github?redirect=${encodeURIComponent(`/redirect?url=${encodeURIComponent(`${options.serverHost}${ctx.url}`)}`)}`);
 		}
 
 		const user = ctx.state.user;
