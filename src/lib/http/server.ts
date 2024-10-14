@@ -46,7 +46,17 @@ app
 	.use(errorHandlerMw)
 	.use(rootRouter.routes())
 	.use(rootRouter.allowedMethods())
-	.use(koaStatic(publicPath, { format: false }));
+	.use(koaStatic(publicPath, {
+		format: false,
+		setHeaders (res) {
+			res.setHeader('Access-Control-Allow-Origin', '*');
+			res.setHeader('Access-Control-Allow-Headers', '*');
+			res.setHeader('Access-Control-Expose-Headers', '*');
+			res.setHeader('Access-Control-Max-Age', '600');
+			res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+			res.setHeader('Timing-Allow-Origin', '*');
+		},
+	}));
 
 app.on('error', errorHandler);
 
