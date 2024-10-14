@@ -44,6 +44,14 @@ app
 	.use(defaultJson())
 	// Error handler must always be the first middleware in a chain unless you know what you are doing ;)
 	.use(errorHandlerMw)
+	.use(async (ctx, next) => {
+		await next();
+
+		console.debug('request URL', ctx.request.url);
+		console.debug('request body:', ctx.request.body);
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+		console.debug('response body:', ctx.response.body.constructor.name === 'Object' ? ctx.response.body : {}.toString.call(ctx.response.body));
+	})
 	.use(rootRouter.routes())
 	.use(rootRouter.allowedMethods())
 	.use(koaStatic(publicPath, {
