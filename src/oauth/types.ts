@@ -1,4 +1,5 @@
-import { AuthorizationCode, Client, Token as TokenWithClientUser } from '@node-oauth/oauth2-server';
+import { AuthorizationCode, Client, Token as TokenWithClientUser, type TokenOptions } from '@node-oauth/oauth2-server';
+import type OAuthModel from './model.js';
 
 export type AuthorizationCodeToSave = Pick<AuthorizationCode, 'authorizationCode' | 'expiresAt' | 'redirectUri' | 'scope' | 'codeChallenge' | 'codeChallengeMethod'>;
 export type AuthorizationCodeSaved = AuthorizationCodeToSave & { client: Pick<Client, 'id' | 'name'>, user: User, owner: { name: string | null, url: string | null }, rememberApproval: boolean, scopesToApprove: string[] };
@@ -6,6 +7,7 @@ export type PublicAuthorizationCodeDetails = Pick<AuthorizationCodeSaved, 'scope
 export type Token = Pick<TokenWithClientUser, 'accessToken' | 'accessTokenExpiresAt' | 'refreshToken' | 'refreshTokenExpiresAt' | 'scope'>;
 export type ClientWithCredentials = Client & { name: string, secrets: string[], owner_name: string | null, owner_url: string | null, requestSecret: string | null };
 export type User = { id: string; $state: string | null };
+export type GrantTypeOptions = TokenOptions & { model?: OAuthModel };
 
 export type InternalToken = {
 	id: number;
