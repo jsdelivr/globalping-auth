@@ -25,6 +25,7 @@ import {
 	PublicAuthorizationCodeDetails,
 	RevocationRequest,
 } from './types.js';
+import GPClientCredentials from './gp-client-credentials.js';
 
 const serverHost = config.get<string>('server.host');
 const dashHost = config.get<string>('server.dashHost');
@@ -181,6 +182,9 @@ export const oAuthServerOptions = {
 	docsHost,
 	serverHost,
 	directusHost,
+	extendedGrantTypes: {
+		gp_client_credentials: GPClientCredentials,
+	},
 };
 
 export const oAuthServer = new ExtendedOAuthServer(oAuthServerOptions);
