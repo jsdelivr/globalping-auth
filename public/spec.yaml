@@ -94,7 +94,6 @@ paths:
               required:
                 - client_id
                 - grant_type
-                - redirect_uri
               properties:
                 client_id:
                   type: string
@@ -114,7 +113,7 @@ paths:
                   description: The refresh token (required for `refresh_token` grant type).
                 redirect_uri:
                   type: string
-                  description: The redirect URI registered by the client.
+                  description: The redirect URI registered by the client (required for `authorization_code` grant type).
                 code_verifier:
                   type: string
                   description: The code verifier for PKCE (required for `authorization_code` grant type).
