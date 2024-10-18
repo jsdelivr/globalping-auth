@@ -20,7 +20,6 @@ paths:
       summary: Authorization
       description: |
         This endpoint initiates the OAuth 2.0 authorization flow. It is used to obtain an authorization code.
-        This is a standard OAuth 2.0 authorization endpoint supporting the `authorization_code` grant type.
       parameters:
         - in: query
           name: client_id
@@ -39,7 +38,8 @@ paths:
           required: true
           schema:
             type: string
-            enum: [code]
+            enum:
+              - code
           example: code
           description: Specifies that an authorization code should be returned.
         - in: query
@@ -63,7 +63,8 @@ paths:
           example: S256
           schema:
             type: string
-            enum: [S256]
+            enum:
+              - S256
           description: The method used to encode the code challenge.
         - in: query
           name: state
@@ -103,20 +104,22 @@ paths:
                   description: The client secret of the OAuth 2.0 application (required if the client has one).
                 grant_type:
                   type: string
-                  enum: [authorization_code, refresh_token]
+                  enum:
+                    - authorization_code
+                    - refresh_token
                   description: The grant type (authorization code or refresh token).
                 code:
                   type: string
                   description: The authorization code obtained from the authorization endpoint (required for `authorization_code` grant type).
-                refresh_token:
-                  type: string
-                  description: The refresh token (required for `refresh_token` grant type).
                 redirect_uri:
                   type: string
                   description: The redirect URI registered by the client (required for `authorization_code` grant type).
                 code_verifier:
                   type: string
                   description: The code verifier for PKCE (required for `authorization_code` grant type).
+                refresh_token:
+                  type: string
+                  description: The refresh token (required for `refresh_token` grant type).
       responses:
         '200':
           description: Returns an access token and a refresh token.
@@ -136,7 +139,8 @@ paths:
                     description: The lifetime of the access token in seconds.
                   token_type:
                     type: string
-                    enum: [Bearer]
+                    enum:
+                      - Bearer
                     description: The type of token issued.
                   scope:
                     type: string
