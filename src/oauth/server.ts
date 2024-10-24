@@ -183,7 +183,7 @@ export const oAuthServerOptions = {
 	serverHost,
 	directusHost,
 	extendedGrantTypes: {
-		gp_client_credentials: GPClientCredentials,
+		globalping_client_credentials: GPClientCredentials,
 	},
 };
 

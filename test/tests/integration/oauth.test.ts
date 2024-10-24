@@ -88,6 +88,20 @@ describe('OAuth', () => {
 			});
 	};
 
+	const gpClientCredentialsTokenRequest = async (client: typeof clients[number], headers = {}, body = {}) => {
+		return requestAgent
+			.post(tokenEndpoint)
+			.set('Content-Type', 'application/x-www-form-urlencoded')
+			.set(headers)
+			.send({
+				client_id: client.id,
+				client_secret: secrets.get(client),
+				grant_type: 'globalping_client_credentials',
+				scope: 'measurements',
+				...body,
+			});
+	};
+
 	before(async () => {
 		app = await getTestServer();
 		requestAgent = request(app);
@@ -320,7 +334,7 @@ describe('OAuth', () => {
 
 		it('should fail with unsupported grant_type', async () => {
 			const res = await defaultTokenRequest(client2, {}, {
-				grant_type: 'client_credentials',
+				grant_type: 'globalping_client_credentials',
 			});
 
 			expect(res.status).to.equal(400);
@@ -381,7 +395,7 @@ describe('OAuth', () => {
 	});
 
 	describe('Refresh Token Grant', () => {
-		it('should successfully exchange refresh token for new access token', async () => {
+		it('should successfully exchange authorization_code`s refresh token for new access token', async () => {
 			// Get the initial token response to retrieve the refresh token
 			const initialTokenResponse = await defaultTokenRequest(client1);
 			expect(initialTokenResponse.status).to.equal(200);
@@ -394,6 +408,31 @@ describe('OAuth', () => {
 				.send({
 					client_id: client1.id,
 					client_secret: secrets.get(client1),
+					refresh_token: refreshToken,
+					grant_type: 'refresh_token',
+				});
+
+			expect(res.status).to.equal(200);
+			expect(res.body).to.have.property('access_token');
+			expect(res.body).to.have.property('refresh_token');
+			expect(res.body).to.have.property('expires_in');
+			expect(res.body).to.have.property('token_type', 'Bearer');
+			expect(res.body).to.have.property('scope', 'measurements');
+		});
+
+		it('should successfully exchange globalping_client_credentials`s refresh token for new access token', async () => {
+			// Get the initial token response to retrieve the refresh token
+			const initialTokenResponse = await gpClientCredentialsTokenRequest(client3);
+			expect(initialTokenResponse.status).to.equal(200);
+			const refreshToken = initialTokenResponse.body.refresh_token;
+
+			// Use the refresh token to get a new access token
+			const res = await requestAgent
+				.post(tokenEndpoint)
+				.set('Content-Type', 'application/x-www-form-urlencoded')
+				.send({
+					client_id: client3.id,
+					client_secret: secrets.get(client3),
 					refresh_token: refreshToken,
 					grant_type: 'refresh_token',
 				});
@@ -468,36 +507,22 @@ describe('OAuth', () => {
 		});
 	});
 
-	describe('Client Credentials Grant', () => {
+	describe('GP Client Credentials Grant', () => {
 		it('should successfully authorize the client and return access token', async () => {
-			const res = await requestAgent
-				.post(tokenEndpoint)
-				.set('Content-Type', 'application/x-www-form-urlencoded')
-				.send({
-					client_id: client3.id,
-					client_secret: secrets.get(client3),
-					grant_type: 'client_credentials',
-					scope: 'measurements',
-				});
+			const res = await gpClientCredentialsTokenRequest(client3);
 
 			expect(res.status).to.equal(200);
 			expect(res.body).to.have.property('access_token');
-			expect(res.body).to.not.have.property('refresh_token');
+			expect(res.body).to.have.property('refresh_token');
 			expect(res.body).to.have.property('expires_in');
 			expect(res.body).to.have.property('token_type', 'Bearer');
 			expect(res.body).to.have.property('scope', 'measurements');
 		});
 
 		it('should fail with wrong client_secret', async () => {
-			const res = await requestAgent
-				.post(tokenEndpoint)
-				.set('Content-Type', 'application/x-www-form-urlencoded')
-				.send({
-					client_id: client3.id,
-					client_secret: 'wrongSecretValue23456723456723456723456723456723',
-					grant_type: 'client_credentials',
-					scope: 'measurements',
-				});
+			const res = await gpClientCredentialsTokenRequest(client3, {}, {
+				client_secret: 'wrongSecretValue23456723456723456723456723456723',
+			});
 
 			expect(res.status).to.equal(400);
 			expect(res.body).to.have.property('error', 'invalid_client');
@@ -510,7 +535,7 @@ describe('OAuth', () => {
 				.set('Content-Type', 'application/x-www-form-urlencoded')
 				.send({
 					client_id: client3.id,
-					grant_type: 'client_credentials',
+					grant_type: 'globalping_client_credentials',
 					scope: 'measurements',
 				});
 
@@ -519,16 +544,8 @@ describe('OAuth', () => {
 			expect(res.body).to.have.property('error_description').that.includes('cannot retrieve client credentials');
 		});
 
-		it('should fail if client_credentials grant type is not specified for the client', async () => {
-			const res = await requestAgent
-				.post(tokenEndpoint)
-				.set('Content-Type', 'application/x-www-form-urlencoded')
-				.send({
-					client_id: client2.id,
-					client_secret: secrets.get(client2),
-					grant_type: 'client_credentials',
-					scope: 'measurements',
-				});
+		it('should fail if globalping_client_credentials grant type is not specified for the client', async () => {
+			const res = await gpClientCredentialsTokenRequest(client2);
 
 			expect(res.status).to.equal(400);
 			expect(res.body).to.have.property('error', 'unauthorized_client');
@@ -542,7 +559,7 @@ describe('OAuth', () => {
 				.send({
 					client_id: client1.id,
 					client_secret: 'randomSecretValue2345672345672345672345672345672',
-					grant_type: 'client_credentials',
+					grant_type: 'globalping_client_credentials',
 					scope: 'measurements',
 				});
 

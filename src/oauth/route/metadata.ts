@@ -20,7 +20,7 @@ export const metadataGet = (options: OAuthRouteOptions) => {
 			],
 			grant_types_supported: [
 				'authorization_code',
-				'client_credentials',
+				'globalping_client_credentials',
 				'refresh_token',
 			],
 			token_endpoint_auth_methods_supported: [

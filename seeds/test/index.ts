@@ -13,7 +13,7 @@ export const clients = [
 		name: 'App One',
 		secrets: '[]',
 		redirect_urls: JSON.stringify([ 'https://example.com/one/callback' ]),
-		grants: JSON.stringify([ 'authorization_code', 'refresh_token', 'client_credentials' ]),
+		grants: JSON.stringify([ 'authorization_code', 'refresh_token', 'globalping_client_credentials' ]),
 	},
 	{
 		id: 'b2a50a7e-6dc5-423d-864e-173ea690992e',
@@ -31,7 +31,7 @@ export const clients = [
 		name: 'Slack App',
 		secrets: '["OSMOYY6tV16Kc0l+BB5ml4eKXFf4JaqARFMCdudKU98="]',
 		redirect_urls: JSON.stringify([ 'https://example.com/three/callback' ]),
-		grants: JSON.stringify([ 'client_credentials' ]),
+		grants: JSON.stringify([ 'globalping_client_credentials', 'refresh_token' ]),
 	},
 ];
 
