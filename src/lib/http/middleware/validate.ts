@@ -1,5 +1,5 @@
-import type { Schema } from 'joi';
-import type { ExtendedMiddleware } from '../../../types.js';
+import { Schema } from 'joi';
+import { ExtendedMiddleware } from '../../../types.js';
 import _ from 'lodash';
 
 export const validate = (schema: Schema): ExtendedMiddleware => async (ctx, next) => {

@@ -1,7 +1,7 @@
 import config from 'config';
 import { jwtVerify } from 'jose';
 
-import type { ExtendedMiddleware } from '../../../types.js';
+import { ExtendedMiddleware } from '../../../types.js';
 
 const sessionConfig = config.get<AuthenticateOptions['session']>('server.session');
 

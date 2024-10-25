@@ -2,15 +2,15 @@ import config from 'config';
 
 import {
 	AccessDeniedError,
+	InvalidRequestError,
+	OAuthError,
+	UnauthorizedRequestError,
 	AuthorizationCode,
 	AuthorizeOptions,
 	default as OAuthServer,
-	InvalidRequestError,
-	OAuthError,
 	Request as OAuthRequest,
 	Response as OAuthResponse,
 	ServerOptions,
-	UnauthorizedRequestError,
 	User,
 } from '@node-oauth/oauth2-server';
 
@@ -18,13 +18,14 @@ import { getRedisClient } from '../lib/redis/client.js';
 import { client } from '../lib/sql/client.js';
 import OAuthModel from './model.js';
 
-import type { Context } from 'koa';
+import { Context } from 'koa';
 import {
 	IntrospectionRequest,
 	OAuthRouteOptions,
 	PublicAuthorizationCodeDetails,
 	RevocationRequest,
 } from './types.js';
+import GPClientCredentials from './gp-client-credentials.js';
 
 const serverHost = config.get<string>('server.host');
 const dashHost = config.get<string>('server.dashHost');
@@ -181,6 +182,9 @@ export const oAuthServerOptions = {
 	docsHost,
 	serverHost,
 	directusHost,
+	extendedGrantTypes: {
+		globalping_client_credentials: GPClientCredentials,
+	},
 };
 
 export const oAuthServer = new ExtendedOAuthServer(oAuthServerOptions);

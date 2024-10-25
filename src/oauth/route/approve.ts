@@ -1,7 +1,7 @@
 import { Response as OAuthResponse } from '@node-oauth/oauth2-server';
 import { oAuthServer } from '../server.js';
-import type { ExtendedContext } from '../../types.js';
-import type { ApproveRequest } from '../types.js';
+import { ExtendedContext } from '../../types.js';
+import { ApproveRequest } from '../types.js';
 
 export const approveGet = async (ctx: ExtendedContext): Promise<void> => {
 	const publicCodeId = ctx.params['publicCodeId'];

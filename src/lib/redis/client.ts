@@ -1,4 +1,4 @@
-import type { RedisClientOptions } from 'redis';
+import { RedisClientOptions } from 'redis';
 import { createRedisClientInternal, RedisClient } from './shared.js';
 
 let redis: RedisClient;

@@ -5,17 +5,16 @@ import { base32 } from '@scure/base';
 import _ from 'lodash';
 
 import {
-	AuthorizationCode,
-	AuthorizationCodeModel,
 	InvalidClientError,
 	InvalidRequestError,
+	AuthorizationCode,
+	AuthorizationCodeModel,
 	RefreshToken,
 	RefreshTokenModel,
 	Token as TokenWithClientUser,
 } from '@node-oauth/oauth2-server';
-
-import type { Knex } from 'knex';
-import type { RedisClient } from '../lib/redis/shared.js';
+import { Knex } from 'knex';
+import { RedisClient } from '../lib/redis/shared.js';
 
 import {
 	AuthorizationCodeSaved,
@@ -29,7 +28,7 @@ import {
 	PublicAuthorizationCodeDetails,
 	Token,
 	User,
-	type Approval,
+	Approval,
 } from './types.js';
 
 const getRandomBytes = promisify(randomBytes);
