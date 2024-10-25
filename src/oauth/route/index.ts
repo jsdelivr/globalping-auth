@@ -1,4 +1,4 @@
-import type Router from '@koa/router';
+import Router from '@koa/router';
 
 import { corsHandler } from '../../lib/http/middleware/cors.js';
 import { authenticate } from '../../lib/http/middleware/authenticate.js';

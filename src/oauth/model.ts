@@ -7,16 +7,16 @@ import _ from 'lodash';
 import {
 	InvalidClientError,
 	InvalidRequestError,
-	type AuthorizationCode,
-	type AuthorizationCodeModel,
-	type RefreshToken,
-	type RefreshTokenModel,
-	type Token as TokenWithClientUser,
+	AuthorizationCode,
+	AuthorizationCodeModel,
+	RefreshToken,
+	RefreshTokenModel,
+	Token as TokenWithClientUser,
 } from '@node-oauth/oauth2-server';
-import type { Knex } from 'knex';
-import type { RedisClient } from '../lib/redis/shared.js';
+import { Knex } from 'knex';
+import { RedisClient } from '../lib/redis/shared.js';
 
-import type {
+import {
 	AuthorizationCodeSaved,
 	AuthorizationCodeToSave,
 	ClientRow,

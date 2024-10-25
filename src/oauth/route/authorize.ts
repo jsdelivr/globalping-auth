@@ -1,7 +1,7 @@
 import { Request as OAuthRequest, Response as OAuthResponse } from '@node-oauth/oauth2-server';
 import { oAuthServer } from '../server.js';
-import type { ExtendedContext } from '../../types.js';
-import type { OAuthRouteOptions } from '../types.js';
+import { ExtendedContext } from '../../types.js';
+import { OAuthRouteOptions } from '../types.js';
 
 type StateObject = { state?: string } | undefined;
 

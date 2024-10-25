@@ -5,21 +5,21 @@ import {
 	InvalidRequestError,
 	OAuthError,
 	UnauthorizedRequestError,
-	type AuthorizationCode,
-	type AuthorizeOptions,
+	AuthorizationCode,
+	AuthorizeOptions,
 	default as OAuthServer,
-	type Request as OAuthRequest,
-	type Response as OAuthResponse,
-	type ServerOptions,
-	type User,
+	Request as OAuthRequest,
+	Response as OAuthResponse,
+	ServerOptions,
+	User,
 } from '@node-oauth/oauth2-server';
 
 import { getRedisClient } from '../lib/redis/client.js';
 import { client } from '../lib/sql/client.js';
 import OAuthModel from './model.js';
 
-import type { Context } from 'koa';
-import type {
+import { Context } from 'koa';
+import {
 	IntrospectionRequest,
 	OAuthRouteOptions,
 	PublicAuthorizationCodeDetails,

@@ -1,6 +1,6 @@
 import { Request as OAuthRequest, Response as OAuthResponse } from '@node-oauth/oauth2-server';
 import { oAuthServer } from '../server.js';
-import type { ExtendedContext } from '../../types.js';
+import { ExtendedContext } from '../../types.js';
 
 export const tokenPost = () => {
 	return async (ctx: ExtendedContext): Promise<void> => {

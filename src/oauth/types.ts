@@ -1,5 +1,5 @@
-import type { AuthorizationCode, Client, Token as TokenWithClientUser, TokenOptions } from '@node-oauth/oauth2-server';
-import type OAuthModel from './model.js';
+import { AuthorizationCode, Client, Token as TokenWithClientUser, TokenOptions } from '@node-oauth/oauth2-server';
+import OAuthModel from './model.js';
 
 export type AuthorizationCodeToSave = Pick<AuthorizationCode, 'authorizationCode' | 'expiresAt' | 'redirectUri' | 'scope' | 'codeChallenge' | 'codeChallengeMethod'>;
 export type AuthorizationCodeSaved = AuthorizationCodeToSave & { client: Pick<Client, 'id' | 'name'>, user: User, owner: { name: string | null, url: string | null }, rememberApproval: boolean, scopesToApprove: string[] };

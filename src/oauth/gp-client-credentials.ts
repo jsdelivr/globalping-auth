@@ -2,10 +2,10 @@ import {
 	AbstractGrantType,
 	InvalidArgumentError,
 	InvalidGrantError,
-	type Request,
+	Request,
 } from '@node-oauth/oauth2-server';
-import type { ClientCredentialsUser, ClientWithCredentials, GrantTypeOptions, User } from './types.js';
-import type OAuthModel from './model.js';
+import { ClientCredentialsUser, ClientWithCredentials, GrantTypeOptions, User } from './types.js';
+import OAuthModel from './model.js';
 
 export default class GPClientCredentials extends AbstractGrantType {
 	model: OAuthModel;

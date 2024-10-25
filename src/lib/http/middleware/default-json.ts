@@ -1,4 +1,4 @@
-import type { ExtendedMiddleware } from '../../../types.js';
+import { ExtendedMiddleware } from '../../../types.js';
 import createHttpError from 'http-errors';
 import _ from 'lodash';
 

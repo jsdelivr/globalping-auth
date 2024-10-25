@@ -1,6 +1,6 @@
 import config from 'config';
-import type { ExtendedContext } from '../../types.js';
-import type { OAuthRouteOptions } from '../types.js';
+import { ExtendedContext } from '../../types.js';
+import { OAuthRouteOptions } from '../types.js';
 
 export const metadataGet = (options: OAuthRouteOptions) => {
 	return async (ctx: ExtendedContext): Promise<void> => {
