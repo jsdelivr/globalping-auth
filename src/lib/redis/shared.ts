@@ -1,5 +1,12 @@
 import config from 'config';
-import { createClient, RedisClientOptions, RedisClientType, RedisDefaultModules, RedisFunctions, RedisScripts } from 'redis';
+import {
+	createClient,
+	type RedisClientOptions,
+	type RedisClientType,
+	type RedisDefaultModules,
+	type RedisFunctions,
+	type RedisScripts,
+} from 'redis';
 import { scopedLogger } from '../logger.js';
 
 const logger = scopedLogger('redis-client');

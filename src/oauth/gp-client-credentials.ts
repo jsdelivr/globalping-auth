@@ -2,7 +2,7 @@ import {
 	AbstractGrantType,
 	InvalidArgumentError,
 	InvalidGrantError,
-	Request,
+	type Request,
 } from '@node-oauth/oauth2-server';
 import type { ClientCredentialsUser, ClientWithCredentials, GrantTypeOptions, User } from './types.js';
 import type OAuthModel from './model.js';

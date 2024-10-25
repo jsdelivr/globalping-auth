@@ -13,6 +13,9 @@
 			"extends": "@martin-kolarik/eslint-config/typescript-type-checking",
 			"parserOptions": {
 				"project": true
+			},
+			"rules": {
+				"@typescript-eslint/consistent-type-imports": "error"
 			}
 		},
 		{

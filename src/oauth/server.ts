@@ -2,16 +2,16 @@ import config from 'config';
 
 import {
 	AccessDeniedError,
-	AuthorizationCode,
-	AuthorizeOptions,
-	default as OAuthServer,
 	InvalidRequestError,
 	OAuthError,
-	Request as OAuthRequest,
-	Response as OAuthResponse,
-	ServerOptions,
 	UnauthorizedRequestError,
-	User,
+	type AuthorizationCode,
+	type AuthorizeOptions,
+	default as OAuthServer,
+	type Request as OAuthRequest,
+	type Response as OAuthResponse,
+	type ServerOptions,
+	type User,
 } from '@node-oauth/oauth2-server';
 
 import { getRedisClient } from '../lib/redis/client.js';
@@ -19,7 +19,7 @@ import { client } from '../lib/sql/client.js';
 import OAuthModel from './model.js';
 
 import type { Context } from 'koa';
-import {
+import type {
 	IntrospectionRequest,
 	OAuthRouteOptions,
 	PublicAuthorizationCodeDetails,
