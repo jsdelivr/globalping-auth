@@ -1,5 +1,6 @@
 import config from 'config';
 import { jwtVerify } from 'jose';
+import apmAgent from 'elastic-apm-node';
 
 import { ExtendedMiddleware } from '../../../types.js';
 
@@ -24,6 +25,7 @@ export const authenticate = (): ExtendedMiddleware => {
 
 				if (result.payload.id && result.payload.app_access) {
 					ctx.state.user = { id: result.payload.id, authMode: 'cookie' };
+					apmAgent.setUserContext({ id: result.payload.id });
 				}
 			} catch {}
 		}
