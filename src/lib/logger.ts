@@ -1,35 +1,44 @@
 import process from 'node:process';
-import { inspect } from 'node:util';
-import * as winston from 'winston';
+import apmAgent from 'elastic-apm-node';
+import ElasticWriter from 'h-logger2-elastic';
+import { ConsoleWriter, Logger } from 'h-logger2';
+import { Client as ElasticSearch } from '@elastic/elasticsearch';
+// eslint-disable-next-line n/no-missing-import
+import { LogLevelValue } from 'h-logger2/src/types.js';
 
-const objectFormatter = (object: Record<string, unknown>) => {
-	const objectWithoutSymbols = Object.fromEntries(Object.entries(object));
-	return inspect(objectWithoutSymbols);
+let esClient: ElasticSearch | undefined;
+
+// istanbul ignore next
+if (process.env['ELASTIC_SEARCH_URL']) {
+	esClient = new ElasticSearch({
+		node: process.env['ELASTIC_SEARCH_URL'],
+	});
+}
+
+const loggerOptions = {
+	inspectOptions: { breakLength: 120 },
 };
 
-const logger = winston.createLogger({
-	level: process.env['LOG_LEVEL'] ?? 'debug',
-	format: winston.format.combine(
-		winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-		winston.format.prettyPrint(),
-		winston.format.printf((info: winston.Logform.TransformableInfo) => {
-			const { timestamp, level, scope, message, stack, label, ...otherFields } = info; // eslint-disable-line @typescript-eslint/no-unsafe-assignment
-			let result = `[${timestamp as string}] [${level.toUpperCase()}] [${process.pid}] [${scope as string}] ${label ? `[${label}] ` : ''}${message as string}`;
-
-			if (Object.keys(otherFields).length > 0) {
-				result += `\n${objectFormatter(otherFields)}`;
-			}
-
-			if (stack) {
-				result += `\n${info['stack'] as string}`;
-			}
-
-			return result;
-		}),
-	),
-	transports: [
-		new winston.transports.Console(),
+const logger = new Logger(
+	'globalping-auth',
+	esClient ? [
+		new ConsoleWriter(Number(process.env['LOG_LEVEL']) as LogLevelValue || Logger.levels.info, loggerOptions),
+		new ElasticWriter(Number(process.env['LOG_LEVEL']) as LogLevelValue || Logger.levels.info, { esClient, apmClient: apmAgent }),
+	] : [
+		new ConsoleWriter(Number(process.env['LOG_LEVEL']) as LogLevelValue || Logger.levels.trace, loggerOptions),
 	],
-});
+);
 
-export const scopedLogger = (scope: string, label?: string): winston.Logger => logger.child({ scope, label });
+export const scopedLogger = (scope: string, parent: Logger = logger): Logger => parent.scope(scope);
+
+export const scopedLoggerWithPrefix = (scope: string, prefix: string, parent: Logger = logger): Logger => new Proxy(parent.scope(scope), {
+	get (target, prop: keyof Logger) {
+		if (prop === 'log') {
+			return (level: LogLevelValue, message: string, error?: never, context?: never) => {
+				return target.log(level, `${prefix} ${message}`, error, context);
+			};
+		}
+
+		return target[prop];
+	},
+});

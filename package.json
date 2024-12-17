@@ -6,10 +6,15 @@
 	"type": "module",
 	"main": "dist/src/index.js",
 	"dependencies": {
+		"@elastic/elasticsearch": "^8.17.0",
 		"@koa/router": "^13.0.0",
 		"@node-oauth/oauth2-server": "^5.2.0",
 		"@scure/base": "^1.1.7",
 		"config": "^3.3.11",
+		"elastic-apm-node": "^4.9.0",
+		"elastic-apm-utils": "^4.1.2",
+		"h-logger2": "^1.3.2",
+		"h-logger2-elastic": "^6.2.1",
 		"http-errors": "^2.0.0",
 		"joi": "^17.13.0",
 		"jose": "^5.7.0",
@@ -23,9 +28,7 @@
 		"koa-static": "^5.0.0",
 		"lodash": "^4.17.21",
 		"mysql": "^2.18.1",
-		"newrelic": "^11.16.0",
-		"redis": "^4.6.13",
-		"winston": "^3.13.0"
+		"redis": "^4.6.13"
 	},
 	"devDependencies": {
 		"@martin-kolarik/eslint-config": "^7.3.2",
@@ -43,7 +46,6 @@
 		"@types/koa-static": "^4.0.4",
 		"@types/lodash": "^4.17.7",
 		"@types/mocha": "^10.0.7",
-		"@types/newrelic": "^9.14.4",
 		"@types/supertest": "^6.0.2",
 		"@types/uuid": "^10.0.0",
 		"@typescript-eslint/eslint-plugin": "^7.8.0",
@@ -65,12 +67,12 @@
 	},
 	"scripts": {
 		"build": "tsc && cp -r public dist",
-		"coverage": "npm run clean && NODE_ENV=test NEW_RELIC_ENABLED=false c8 mocha",
+		"coverage": "npm run clean && NODE_ENV=test c8 mocha",
 		"clean": "rimraf coverage",
 		"prepare": "husky || echo 'Failed to install husky'",
-		"start": "node --experimental-loader newrelic/esm-loader.mjs -r newrelic dist/src/index.js",
-		"start:dev": "NODE_ENV=development NEW_RELIC_ENABLED=false tsx src/index.ts",
-		"start:test": "NODE_ENV=test knex migrate:latest && NODE_ENV=test NEW_RELIC_ENABLED=false tsx src/index.ts",
+		"start": "ELASTIC_APM_CONFIG_FILE=elastic-apm-node.cjs node --experimental-loader elastic-apm-node/loader.mjs -r elastic-apm-node/start.js dist/src/index.js",
+		"start:dev": "NODE_ENV=development tsx src/index.ts",
+		"start:test": "NODE_ENV=test knex migrate:latest && NODE_ENV=test tsx src/index.ts",
 		"lint": "npm run lint:js && npm run lint:types",
 		"lint:fix": "npm run lint:js:fix && npm run lint:types",
 		"lint:js": "eslint --cache .",
@@ -78,8 +80,8 @@
 		"lint:types": "tsc --noEmit",
 		"test": "npm run lint && npm run test:mocha",
 		"test:dist": "node --test-reporter=spec test/dist.js",
-		"test:mocha": "NODE_ENV=test NEW_RELIC_ENABLED=false mocha",
-		"test:mocha:dev": "TS_NODE_TRANSPILE_ONLY=true NODE_ENV=test NEW_RELIC_ENABLED=false mocha"
+		"test:mocha": "NODE_ENV=test mocha",
+		"test:mocha:dev": "TS_NODE_TRANSPILE_ONLY=true NODE_ENV=test mocha"
 	},
 	"lint-staged": {
 		"*.{cjs,js,json,ts}": "eslint --cache --fix"

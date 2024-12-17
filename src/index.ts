@@ -12,12 +12,12 @@ const workerFn = async () => {
 	const server = await createServer();
 
 	server.listen(port, () => {
-		logger.info(`application started at http://localhost:${port}`);
+		logger.info(`Application started at http://localhost:${port}`);
 	});
 };
 
 if (cluster.isPrimary) {
-	logger.info(`Master ${process.pid} is running with ${workerCount} workers`);
+	logger.info(`Master ${process.pid} is running with ${workerCount} workers.`);
 
 	for (let i = 0; i < workerCount; i++) {
 		cluster.fork();
@@ -25,7 +25,7 @@ if (cluster.isPrimary) {
 
 	cluster.on('exit', (worker, code, signal) => {
 		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-		logger.error(`worker ${worker.process.pid!} died with code ${code} and signal ${signal}`);
+		logger.error(`Worker ${worker.process.pid!} died with code ${code} and signal ${signal}.`);
 
 		if (process.env['TEST_DONT_RESTART_WORKERS']) {
 			return;
@@ -37,7 +37,7 @@ if (cluster.isPrimary) {
 	logger.info(`Worker ${process.pid} is running`);
 
 	workerFn().catch((error) => {
-		logger.error('failed to start cluster', error);
+		logger.error('Failed to start cluster:', error);
 		setTimeout(() => process.exit(1), 5000);
 	});
 }

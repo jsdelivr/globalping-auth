@@ -1,6 +1,8 @@
 import { createServer } from 'node:http';
 import * as zlib from 'node:zlib';
 import * as url from 'node:url';
+import apmAgent from 'elastic-apm-node';
+import { apm as apmUtils, koa as koaElasticUtils } from 'elastic-apm-utils';
 import json from 'koa-json';
 import config from 'config';
 import Router from '@koa/router';
@@ -15,12 +17,18 @@ import { errorHandler } from './error-handler.js';
 import { defaultJson } from './middleware/default-json.js';
 import { errorHandlerMw } from './middleware/error-handler.js';
 
+apmAgent.addTransactionFilter(apmUtils.transactionFilter({
+	keepResponse: [ 'location' ],
+}));
+
 const app = new Koa();
 const publicPath = url.fileURLToPath(new URL('.', import.meta.url)) + '/../../../public';
 const docsHost = config.get<string>('server.docsHost');
 
 const rootRouter = new Router({ strict: true, sensitive: true });
-rootRouter.prefix('/');
+
+rootRouter.prefix('/')
+	.use(koaElasticUtils.middleware(apmAgent));
 
 // GET /
 rootRouter.get('/', '/', (ctx) => {
@@ -46,6 +54,7 @@ app
 	.use(errorHandlerMw)
 	.use(rootRouter.routes())
 	.use(rootRouter.allowedMethods())
+	.use(koaElasticUtils.middleware(apmAgent))
 	.use(koaStatic(publicPath, {
 		format: false,
 		setHeaders (res) {
