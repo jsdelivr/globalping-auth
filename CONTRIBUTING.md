@@ -33,9 +33,9 @@ Most IDEs have plugins integrating the used linter (eslint), including support f
 
 ### Environment variables
 
-- `NEW_RELIC_LICENSE_KEY={value}` used in production to send APM metrics to new relic
-- `NEW_RELIC_APP_NAME={value}` used in production to send APM metrics to new relic
-- `NEW_RELIC_ENABLED=false` used in development to disable newrelic monitoring
+- `ELASTIC_APM_SERVER_URL={value}` used in production to send APM metrics to elastic
+- `ELASTIC_APM_SECRET_TOKEN={value}` used in production to send APM metrics to elastic
+- `ELASTIC_SEARCH_URL={value}` used in production to send logs to elastic
 - `SERVER_SESSION_COOKIE_SECRET={value}` used to read the shared session cookie
 - `REDIS_URL` used in production to set the redis URL including credentials
 - `DB_CONNECTION_HOST`, `DB_CONNECTION_USER`, `DB_CONNECTION_PASSWORD`, and `DB_CONNECTION_DATABASE` database connection details
