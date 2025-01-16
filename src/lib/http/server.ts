@@ -12,6 +12,7 @@ import koaFavicon from 'koa-favicon';
 import koaStatic from 'koa-static';
 import Koa from 'koa';
 
+import { registerHealthRoute } from '../../health/route/get.js';
 import { registerOAuthRoutes } from '../../oauth/route/index.js';
 import { errorHandler } from './error-handler.js';
 import { defaultJson } from './middleware/default-json.js';
@@ -40,6 +41,9 @@ rootRouter.get('/', '/', (ctx) => {
 		},
 	};
 });
+
+// GET /health
+registerHealthRoute(rootRouter);
 
 // /oauth
 registerOAuthRoutes(rootRouter);
