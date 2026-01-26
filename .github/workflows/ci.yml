@@ -41,10 +41,10 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
         with:
-          node-version: 20.x
+          node-version: 22.x
       - name: Build
         run: |
           npm ci
