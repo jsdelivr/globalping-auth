@@ -10,6 +10,7 @@
 		"moduleResolution": "NodeNext",
 		"resolveJsonModule": true,
 		"sourceMap": true,
+		"checkJs": true,
 		"paths": {}
 	},
 	"include": [

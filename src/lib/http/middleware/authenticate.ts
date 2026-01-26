@@ -30,9 +30,9 @@ export const authenticate = (): ExtendedMiddleware => {
 			} catch {}
 		}
 
-		return next();
+		await next();
 	};
 };
 
-export type AuthenticateOptions = { session: { cookieName: string, cookieSecret: string } };
-export type AuthenticateState = { user?: { id: string, scopes?: string[], authMode: 'cookie' | 'token' } };
+export type AuthenticateOptions = { session: { cookieName: string; cookieSecret: string } };
+export type AuthenticateState = { user?: { id: string; scopes?: string[]; authMode: 'cookie' | 'token' } };

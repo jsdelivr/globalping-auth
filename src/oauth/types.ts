@@ -2,10 +2,10 @@ import { AuthorizationCode, Client, Token as TokenWithClientUser, TokenOptions }
 import OAuthModel from './model.js';
 
 export type AuthorizationCodeToSave = Pick<AuthorizationCode, 'authorizationCode' | 'expiresAt' | 'redirectUri' | 'scope' | 'codeChallenge' | 'codeChallengeMethod'>;
-export type AuthorizationCodeSaved = AuthorizationCodeToSave & { client: Pick<Client, 'id' | 'name'>, user: User, owner: { name: string | null, url: string | null }, rememberApproval: boolean, scopesToApprove: string[] };
+export type AuthorizationCodeSaved = AuthorizationCodeToSave & { client: Pick<Client, 'id' | 'name'>; user: User; owner: { name: string | null; url: string | null }; rememberApproval: boolean; scopesToApprove: string[] };
 export type PublicAuthorizationCodeDetails = Pick<AuthorizationCodeSaved, 'scope' | 'client'>;
 export type Token = Pick<TokenWithClientUser, 'accessToken' | 'accessTokenExpiresAt' | 'refreshToken' | 'refreshTokenExpiresAt' | 'scope'>;
-export type ClientWithCredentials = Client & { name: string, secrets: string[], owner_name: string | null, owner_url: string | null, requestSecret: string | null };
+export type ClientWithCredentials = Client & { name: string; secrets: string[]; owner_name: string | null; owner_url: string | null; requestSecret: string | null };
 export type User = { id: string; $state: string | null };
 export type GrantTypeOptions = TokenOptions & { model?: OAuthModel };
 
@@ -42,16 +42,16 @@ export type ClientRow = {
 
 export type Approval = {
 	scopes: string;
-}
+};
 
 export type InternalUser = {
 	id: string;
 	github_username: string;
-}
+};
 
 export type ClientCredentialsUser = {
 	id: null;
-}
+};
 
 export type OAuthRouteOptions = {
 	dashHost: string;

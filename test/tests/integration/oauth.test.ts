@@ -5,7 +5,7 @@ import { expect } from 'chai';
 import * as jose from 'jose';
 import Bluebird from 'bluebird';
 import config from 'config';
-import request, { Agent } from 'supertest';
+import request from 'supertest';
 import type { Server } from 'node:http';
 
 import { client as sql } from '../../../src/lib/sql/client.js';
@@ -26,7 +26,7 @@ const client3 = clients[2]!;
 
 describe('OAuth', () => {
 	let app: Server;
-	let requestAgent: Agent;
+	let requestAgent: request.Agent;
 	let codeVerifier: string;
 	let codeChallenge: string;
 	let user1Cookie: string;

@@ -8,5 +8,5 @@ export const corsHandler = () => async (ctx: Context, next: Next) => {
 	ctx.set('Cross-Origin-Resource-Policy', 'cross-origin');
 	ctx.set('Timing-Allow-Origin', '*');
 
-	return next();
+	await next();
 };
