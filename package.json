@@ -88,6 +88,6 @@
 		"*.{cjs,js,json,ts}": "eslint --cache --fix"
 	},
 	"engines": {
-		"node": "22"
+		"node": "24"
 	}
 }
