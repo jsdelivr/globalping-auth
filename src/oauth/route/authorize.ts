@@ -1,7 +1,8 @@
-import { Request as OAuthRequest, Response as OAuthResponse } from '@node-oauth/oauth2-server';
+import { Response as OAuthResponse } from '@node-oauth/oauth2-server';
 import { oAuthServer } from '../server.js';
 import { ExtendedContext } from '../../types.js';
 import { OAuthRouteOptions } from '../types.js';
+import { createOAuthRequest } from '../request.js';
 
 type StateObject = { state?: string } | undefined;
 
@@ -13,7 +14,7 @@ const handle = (options: OAuthRouteOptions) => {
 
 		const user = ctx.state.user;
 		const state = (ctx.request.body as StateObject)?.state || (ctx.query as StateObject)?.state;
-		const request = new OAuthRequest(ctx.request);
+		const request = createOAuthRequest(ctx);
 		const response = new OAuthResponse(ctx.response);
 
 		await oAuthServer.handle(ctx, response, () => {

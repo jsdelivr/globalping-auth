@@ -5,13 +5,14 @@ import {
 	RedisClientType,
 	RedisDefaultModules,
 	RedisFunctions,
+	RespVersions,
 	RedisScripts,
 } from 'redis';
 import { scopedLogger } from '../logger.js';
 
 const logger = scopedLogger('redis-client');
 
-export type RedisClient = RedisClientType<RedisDefaultModules, RedisFunctions, RedisScripts>;
+export type RedisClient = RedisClientType<RedisDefaultModules, RedisFunctions, RedisScripts, RespVersions>;
 
 export const createRedisClientInternal = (options?: RedisClientOptions): RedisClient => {
 	const client = createClient({
