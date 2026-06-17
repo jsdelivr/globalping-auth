@@ -71,7 +71,7 @@
 		"coverage": "npm run clean && NODE_ENV=test c8 mocha",
 		"clean": "rimraf coverage",
 		"prepare": "husky || echo 'Failed to install husky'",
-		"start": "ELASTIC_APM_CONFIG_FILE=elastic-apm-node.cjs node --experimental-loader elastic-apm-node/loader.mjs -r elastic-apm-node/start.js dist/src/index.js",
+		"start": "ELASTIC_APM_CONFIG_FILE=elastic-apm-node.cjs node --experimental-loader elastic-apm-node/loader.mjs -r ./elastic-apm-utils.cjs -r elastic-apm-node/start.js dist/src/index.js",
 		"start:dev": "NODE_ENV=development tsx src/index.ts",
 		"start:test": "NODE_ENV=test knex migrate:latest && NODE_ENV=test tsx src/index.ts",
 		"lint": "npm run lint:js && npm run lint:types",

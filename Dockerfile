@@ -28,7 +28,7 @@ RUN npm ci --omit=dev \
 	&& npm cache clean --force
 
 COPY --from=build --chown=node:node /app/dist ./dist
-COPY --chown=node:node package.json package-lock.json elastic-apm-node.cjs knexfile.js ./
+COPY --chown=node:node package.json package-lock.json elastic-apm-node.cjs elastic-apm-utils.cjs knexfile.js ./
 COPY --chown=node:node config ./config
 COPY --chown=node:node migrations ./migrations
 
@@ -39,4 +39,4 @@ USER node
 
 EXPOSE 13110
 
-CMD [ "node", "--experimental-loader", "elastic-apm-node/loader.mjs", "-r", "elastic-apm-node/start.js", "dist/src/index.js" ]
+CMD [ "node", "--experimental-loader", "elastic-apm-node/loader.mjs", "-r", "./elastic-apm-utils.cjs", "-r", "elastic-apm-node/start.js", "dist/src/index.js" ]
