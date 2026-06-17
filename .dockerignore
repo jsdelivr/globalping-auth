@@ -1,0 +1,13 @@
+.docker/
+.git/
+.github/
+.husky/
+.idea/
+.local/
+coverage/
+dist/
+node_modules/
+tmp/
+
+.DS_Store
+.eslintcache
