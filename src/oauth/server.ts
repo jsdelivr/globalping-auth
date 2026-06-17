@@ -34,10 +34,12 @@ const directusHost = config.get<string>('server.directusHost');
 
 class ExtendedOAuthServer extends OAuthServer {
 	model: OAuthModel;
+	private readonly routeOptions: ServerOptions & OAuthRouteOptions;
 
-	constructor (private readonly options: ServerOptions & OAuthRouteOptions) {
+	constructor (options: ServerOptions & OAuthRouteOptions) {
 		super(options);
 		this.model = options.model as OAuthModel;
+		this.routeOptions = options;
 	}
 
 	override async authorize (request: OAuthRequest, response: OAuthResponse, options?: AuthorizeOptions): Promise<AuthorizationCode> {
@@ -45,7 +47,7 @@ class ExtendedOAuthServer extends OAuthServer {
 
 		// Interactive approval is required.
 		if (code['publicCodeId']) {
-			response.redirect(`${this.options.dashHost}/authorize/${code['publicCodeId']}`);
+			response.redirect(`${this.routeOptions.dashHost}/authorize/${code['publicCodeId']}`);
 		}
 
 		return code;

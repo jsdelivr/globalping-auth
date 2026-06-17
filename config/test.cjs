@@ -5,7 +5,7 @@ module.exports = {
 		},
 	},
 	redis: {
-		url: 'redis://localhost:16379',
+		url: 'redis://localhost:7001',
 		socket: {
 			tls: false,
 		},

@@ -11,6 +11,10 @@
 		"resolveJsonModule": true,
 		"sourceMap": true,
 		"checkJs": true,
+		"types": [
+			"node",
+			"mocha"
+		],
 		"paths": {}
 	},
 	"include": [
