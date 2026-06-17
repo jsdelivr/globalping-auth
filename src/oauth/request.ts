@@ -17,7 +17,11 @@ const normalizeQuery = (query: ExtendedContext['query']): Record<string, string>
 			return [];
 		}
 
-		return [ [ key, Array.isArray(value) ? value[0] ?? '' : value ] ];
+		if (Array.isArray(value)) {
+			return [];
+		}
+
+		return [ [ key, value ] ];
 	}));
 };
 

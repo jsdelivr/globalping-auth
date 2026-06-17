@@ -13,9 +13,9 @@ const handle = (options: OAuthRouteOptions) => {
 		}
 
 		const user = ctx.state.user;
-		const state = (ctx.request.body as StateObject)?.state || (ctx.query as StateObject)?.state;
 		const request = createOAuthRequest(ctx);
 		const response = new OAuthResponse(ctx.response);
+		const state = (request.body as StateObject)?.state || (request.query as StateObject)?.state;
 
 		await oAuthServer.handle(ctx, response, () => {
 			return oAuthServer.authorize(request, response, {

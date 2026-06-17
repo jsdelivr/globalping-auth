@@ -219,6 +219,24 @@ describe('OAuth', () => {
 			expect(res.body).to.have.property('error_description').that.includes('client is invalid');
 		});
 
+		it('should drop all authorization query parameter values when duplicates are present', async () => {
+			const res1 = await defaultAuthorizationRequest(client1, {}, {
+				state: [ 'someRandomState', 'otherRandomState' ],
+			});
+
+			expect(res1.status).to.equal(302);
+			expect(res1.headers['location']).to.include(`https://dash.globalping.io/authorize/`);
+
+			const res2 = await requestAgent
+				.post(getApprovalUrl(res1.headers['location']!))
+				.set('Cookie', `dash_session_token=${user1Cookie}`)
+				.send({ approved: 1 });
+
+			expect(res2.status).to.equal(302);
+			expect(res2.headers['location']).to.include(`code=`);
+			expect(res2.headers['location']).not.to.include(`state=`);
+		});
+
 		it('should fail authorization with mismatched redirect_uri', async () => {
 			const res = await defaultAuthorizationRequest(client1, {}, {
 				redirect_uri: 'https://wrongurl.com/callback',
