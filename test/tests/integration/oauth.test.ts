@@ -247,6 +247,28 @@ describe('OAuth', () => {
 			expect(res.body).to.have.property('error_description').that.includes('redirect_uri');
 		});
 
+		it('should require redirect_uri for clients with multiple redirect URLs', async () => {
+			const res = await defaultAuthorizationRequest(client1, {}, {
+				redirect_uri: undefined,
+			});
+
+			expect(res.status).to.equal(400);
+
+			expect(res.body).to.deep.equal({
+				error: 'invalid_request',
+				error_description: 'Missing parameter: `redirect_uri`',
+			});
+		});
+
+		it('should use the registered redirect URL when a client has only one', async () => {
+			const res = await defaultAuthorizationRequest(client2, {}, {
+				redirect_uri: undefined,
+			});
+
+			expect(res.status).to.equal(302);
+			expect(res.headers['location']).to.include(`https://dash.globalping.io/authorize/`);
+		});
+
 		it('should fail authorization with missing scope', async () => {
 			const res = await defaultAuthorizationRequest(client1, {}, {
 				scope: '',

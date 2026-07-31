@@ -32,6 +32,11 @@ const dashHost = config.get<string>('server.dashHost');
 const docsHost = config.get<string>('server.docsHost');
 const directusHost = config.get<string>('server.directusHost');
 
+type AuthorizationRequestParameters = {
+	client_id?: string;
+	redirect_uri?: string;
+};
+
 class ExtendedOAuthServer extends OAuthServer {
 	model: OAuthModel;
 	private readonly routeOptions: ServerOptions & OAuthRouteOptions;
@@ -43,6 +48,22 @@ class ExtendedOAuthServer extends OAuthServer {
 	}
 
 	override async authorize (request: OAuthRequest, response: OAuthResponse, options?: AuthorizeOptions): Promise<AuthorizationCode> {
+		const body = request.body as AuthorizationRequestParameters;
+		const query = request.query as AuthorizationRequestParameters | undefined;
+		const redirectUri = body.redirect_uri || query?.redirect_uri;
+
+		if (!redirectUri) {
+			const clientId = body.client_id || query?.client_id;
+
+			if (clientId) {
+				const oauthClient = await this.model.getClient(clientId, null);
+
+				if (Array.isArray(oauthClient.redirectUris) && oauthClient.redirectUris.length > 1) {
+					throw new InvalidRequestError('Missing parameter: `redirect_uri`');
+				}
+			}
+		}
+
 		const code = await super.authorize(request, response, options);
 
 		// Interactive approval is required.
