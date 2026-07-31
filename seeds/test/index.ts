@@ -12,7 +12,10 @@ export const clients = [
 		user_created: users[0]!.id,
 		name: 'App One',
 		secrets: '[]',
-		redirect_urls: JSON.stringify([ 'https://example.com/one/callback' ]),
+		redirect_urls: JSON.stringify([
+			'https://example.com/one/callback',
+			'https://example.com/one/alternative-callback',
+		]),
 		grants: JSON.stringify([ 'authorization_code', 'refresh_token', 'globalping_client_credentials' ]),
 	},
 	{
