@@ -3,6 +3,7 @@ import { oAuthServer } from '../server.js';
 import { ExtendedContext } from '../../types.js';
 import { OAuthRouteOptions } from '../types.js';
 import { createOAuthRequest } from '../request.js';
+import { getUserAccountId } from '../../lib/accounts.js';
 
 type StateObject = { state?: string } | undefined;
 
@@ -13,6 +14,8 @@ const handle = (options: OAuthRouteOptions) => {
 		}
 
 		const user = ctx.state.user;
+		// PHASE5: drop the lookup. Directus puts the account in the cookie, the sessions issued before that stay valid for a day.
+		const userAccountId = user.userAccountId ?? await getUserAccountId(user.id);
 		const request = createOAuthRequest(ctx);
 		const response = new OAuthResponse(ctx.response);
 		const state = (request.body as StateObject)?.state || (request.query as StateObject)?.state;
@@ -24,6 +27,7 @@ const handle = (options: OAuthRouteOptions) => {
 						return {
 							id: user.id,
 							$state: state || null,
+							accountId: userAccountId,
 						};
 					},
 				},

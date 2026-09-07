@@ -1,9 +1,28 @@
 import { createHash } from 'node:crypto';
 import { Knex } from 'knex';
 
+export const orgs = [
+	{ id: 'org1', name: 'org-one', github_id: '1000', adoption_token: 'orgOneAdoptionToken' },
+];
+
 export const users = [
-	{ id: '4c504c2b-b53c-48d6-a526-2e3194cd6740', github_username: 'user1_github' },
-	{ id: 'dfe6d9d6-eaa0-4f7d-aa8d-439a9efeef68' },
+	{ id: 'user1', github_username: 'user1_github' },
+	{ id: 'user2' },
+	{ id: 'user3', selected_orgs: JSON.stringify([ orgs[0]!.id ]) }, // The only user who picked an org in the dashboard, so the approval screen is never skipped for them.
+];
+
+export const accounts = [
+	{ id: 'user1_account', user: users[0]!.id, org: null },
+	{ id: 'user2_account', user: users[1]!.id, org: null },
+	{ id: 'org1_account', user: null, org: orgs[0]!.id },
+	{ id: 'user3_account', user: users[2]!.id, org: null },
+];
+
+// user1 and user3 may approve apps for the org, user2 only sees it.
+export const orgMembers = [
+	{ id: 'org1_user1', org: orgs[0]!.id, user: users[0]!.id, role: 'member' },
+	{ id: 'org1_user2', org: orgs[0]!.id, user: users[1]!.id, role: 'viewer' },
+	{ id: 'org1_user3', org: orgs[0]!.id, user: users[2]!.id, role: 'member' },
 ];
 
 export const clients = [
@@ -44,10 +63,10 @@ export const secrets = new Map([
 ]);
 
 export async function seed (db: Knex) {
-	// Insert users
 	await db('directus_users').insert(users);
-
-	// Insert clients
+	await db('gp_orgs').insert(orgs);
+	await db('gp_accounts').insert(accounts);
+	await db('gp_org_members').insert(orgMembers);
 	await db('gp_apps').insert(clients);
 
 	// Insert tokens
@@ -62,6 +81,7 @@ export async function seed (db: Knex) {
 			origins: JSON.stringify([ 'https://origin1.com' ]),
 			user_created: users[0]!.id,
 			user_updated: users[0]!.id,
+			account_id: accounts[0]!.id,
 			value: createHash('sha256').update('token1value').digest('base64'),
 			app_id: clients[0]!.id,
 			scopes: JSON.stringify([ 'measurements' ]),
@@ -78,6 +98,7 @@ export async function seed (db: Knex) {
 			origins: JSON.stringify([ 'https://origin3.com' ]),
 			user_created: users[0]!.id,
 			user_updated: users[0]!.id,
+			account_id: accounts[0]!.id,
 			value: createHash('sha256').update('token2value').digest('base64'),
 			app_id: clients[1]!.id,
 			scopes: JSON.stringify([ 'measurements' ]),
@@ -94,6 +115,7 @@ export async function seed (db: Knex) {
 			origins: JSON.stringify([ 'https://origin2.com' ]),
 			user_created: users[1]!.id,
 			user_updated: users[1]!.id,
+			account_id: accounts[1]!.id,
 			value: createHash('sha256').update('token3value').digest('base64'),
 			app_id: clients[0]!.id,
 			scopes: JSON.stringify([ 'measurements' ]),
@@ -110,6 +132,7 @@ export async function seed (db: Knex) {
 			origins: JSON.stringify([ 'https://origin4.com' ]),
 			user_created: users[1]!.id,
 			user_updated: users[1]!.id,
+			account_id: accounts[1]!.id,
 			value: createHash('sha256').update('token4value').digest('base64'),
 			app_id: clients[1]!.id,
 			scopes: JSON.stringify([ 'measurements' ]),

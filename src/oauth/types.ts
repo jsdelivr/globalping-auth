@@ -6,7 +6,8 @@ export type AuthorizationCodeSaved = AuthorizationCodeToSave & { client: Pick<Cl
 export type PublicAuthorizationCodeDetails = Pick<AuthorizationCodeSaved, 'scope' | 'client'>;
 export type Token = Pick<TokenWithClientUser, 'accessToken' | 'accessTokenExpiresAt' | 'refreshToken' | 'refreshTokenExpiresAt' | 'scope'>;
 export type ClientWithCredentials = Client & { name: string; secrets: string[]; owner_name: string | null; owner_url: string | null; requestSecret: string | null };
-export type User = { id: string; $state: string | null };
+// `accountId` is the account the authorization is for: the user's own until the approval screen picks an org instead.
+export type User = { id: string; $state: string | null; accountId: string | null };
 export type GrantTypeOptions = TokenOptions & { model?: OAuthModel };
 
 export type InternalToken = {
@@ -21,6 +22,7 @@ export type InternalToken = {
 	app_id: string | null;
 	parent: number | null;
 	user_created: string;
+	account_id: string | null;
 };
 
 export type InternalTokenRow = Omit<InternalToken, 'scopes' | 'origins'> & {
@@ -51,6 +53,7 @@ export type InternalUser = {
 
 export type ClientCredentialsUser = {
 	id: null;
+	accountId: null;
 };
 
 export type OAuthRouteOptions = {
@@ -62,6 +65,7 @@ export type OAuthRouteOptions = {
 
 export type ApproveRequest = {
 	approved: number;
+	accountId?: string;
 };
 
 export type IntrospectionRequest = {

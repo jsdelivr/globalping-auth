@@ -11,7 +11,6 @@ import {
 	Request as OAuthRequest,
 	Response as OAuthResponse,
 	ServerOptions,
-	User,
 } from '@node-oauth/oauth2-server';
 
 import { getRedisClient } from '../lib/redis/client.js';
@@ -89,18 +88,18 @@ class ExtendedOAuthServer extends OAuthServer {
 		return code;
 	}
 
-	async submitApproval (publicCodeId: string | undefined, approved: boolean, user: User, response: OAuthResponse) {
+	async submitApproval (publicCodeId: string | undefined, approved: boolean, user: { id: string }, response: OAuthResponse, accountId?: string) {
 		if (!publicCodeId) {
 			throw new InvalidRequestError('Missing parameter: `publicCodeId`');
 		}
 
-		const code = await this.model.approveAuthorizationCode(publicCodeId, approved);
+		const code = await this.model.approveAuthorizationCode(publicCodeId, approved, accountId);
 
 		if (!code) {
 			throw new InvalidRequestError('Invalid parameter: `publicCodeId`');
 		}
 
-		if (code.user.id !== user['id']) {
+		if (code.user.id !== user.id) {
 			throw new AccessDeniedError('Access denied');
 		}
 

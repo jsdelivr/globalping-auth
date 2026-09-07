@@ -10,7 +10,7 @@ import type { Server } from 'node:http';
 
 import { client as sql } from '../../../src/lib/sql/client.js';
 import { getTestServer } from '../../utils/server.js';
-import { clients, secrets, users } from '../../../seeds/test/index.js';
+import { accounts, clients, secrets, users } from '../../../seeds/test/index.js';
 
 const sessionSecret = config.get<string>('server.session.cookieSecret');
 
@@ -20,6 +20,12 @@ const introspectionEndpoint = '/oauth/token/introspect';
 const authorizationEndpoint = '/oauth/authorize';
 
 const user1 = users[0]!;
+const user2 = users[1]!;
+const user3 = users[2]!;
+const user1Account = accounts[0]!;
+const user2Account = accounts[1]!;
+const orgAccount = accounts[2]!;
+const user3Account = accounts[3]!;
 const client1 = clients[0]!;
 const client2 = clients[1]!;
 const client3 = clients[2]!;
@@ -52,7 +58,7 @@ describe('OAuth', () => {
 			});
 	};
 
-	const getAuthorizationCode = async (client: typeof clients[number]): Promise<string> => {
+	const getAuthorizationCode = async (client: typeof clients[number], approveBody = {}): Promise<string> => {
 		const res1 = await defaultAuthorizationRequest(client);
 
 		expect(res1.status).to.equal(302);
@@ -61,7 +67,7 @@ describe('OAuth', () => {
 		const res2 = await requestAgent
 			.post(getApprovalUrl(res1.headers['location']!))
 			.set('Cookie', `dash_session_token=${user1Cookie}`)
-			.send({ approved: 1 });
+			.send({ approved: 1, ...approveBody });
 
 		expect(res2.status).to.equal(302);
 		expect(res2.headers['location']).to.include(`code=`);
@@ -70,8 +76,8 @@ describe('OAuth', () => {
 		return new URL(res2.headers['location']!).searchParams.get('code')!;
 	};
 
-	const defaultTokenRequest = async (client: typeof clients[number], headers = {}, body = {}) => {
-		const authorizationCode = await getAuthorizationCode(client);
+	const defaultTokenRequest = async (client: typeof clients[number], headers = {}, body = {}, approveBody = {}) => {
+		const authorizationCode = await getAuthorizationCode(client, approveBody);
 
 		return requestAgent
 			.post(tokenEndpoint)
@@ -108,7 +114,7 @@ describe('OAuth', () => {
 		codeVerifier = generateRandomCodeVerifier();
 		codeChallenge = await calculatePKCECodeChallenge(codeVerifier);
 
-		user1Cookie = await new jose.SignJWT({ id: '4c504c2b-b53c-48d6-a526-2e3194cd6740', app_access: 1 })
+		user1Cookie = await new jose.SignJWT({ id: user1.id, app_access: 1 })
 			.setProtectedHeader({ alg: 'HS256' })
 			.setIssuedAt()
 			.setExpirationTime('1h')
@@ -318,6 +324,167 @@ describe('OAuth', () => {
 
 			expect(res.status).to.equal(302);
 			expect(res.headers).to.have.property('location').that.includes(`https://dash-directus.globalping.io/auth/login`);
+		});
+	});
+
+	describe('Accounts', () => {
+		const getApproval = () => sql('gp_apps_approvals').where({ app: client2.id }).first<{ user_created: string; account_id: string }>();
+		const getTokenAccounts = (accessToken: string) => {
+			const hash = createHash('sha256').update(base32.decode(accessToken.toUpperCase())).digest('base64');
+
+			return sql('gp_tokens')
+				.where({ value: hash })
+				.orWhereIn('id', sql('gp_tokens').where({ value: hash }).select('parent'))
+				.select<{ account_id: string | null }[]>('account_id');
+		};
+
+		it('should approve the app and issue its tokens for the personal account', async () => {
+			const res = await defaultTokenRequest(client2);
+			expect(res.status).to.equal(200);
+
+			const approval = await getApproval();
+			expect(approval.user_created).to.equal(user1.id);
+			expect(approval.account_id).to.equal(user1Account.id);
+
+			const tokens = await getTokenAccounts(res.body.access_token as string);
+			expect(tokens).to.have.lengthOf(2);
+			tokens.forEach(token => expect(token.account_id).to.equal(user1Account.id));
+		});
+
+		it('should always ask for approval when the user has an org to pick', async () => {
+			const user3Cookie = await new jose.SignJWT({ id: user3.id, app_access: 1, user_account_id: user3Account.id })
+				.setProtectedHeader({ alg: 'HS256' })
+				.setIssuedAt()
+				.setExpirationTime('1h')
+				.sign(Buffer.from(sessionSecret));
+
+			const authorize = () => requestAgent
+				.get(authorizationEndpoint)
+				.set('Cookie', `dash_session_token=${user3Cookie}`)
+				.query({
+					client_id: client2.id,
+					redirect_uri: JSON.parse(client2.redirect_urls)[0],
+					response_type: 'code',
+					scope: 'measurements',
+					state: 'someRandomState',
+					code_challenge: codeChallenge,
+					code_challenge_method: 'S256',
+				});
+
+			const res1 = await authorize();
+			expect(res1.headers['location']).to.include('https://dash.globalping.io/authorize/');
+
+			const res2 = await requestAgent
+				.post(getApprovalUrl(res1.headers['location']!))
+				.set('Cookie', `dash_session_token=${user3Cookie}`)
+				.send({ approved: 1 });
+
+			expect(res2.status).to.equal(302);
+			expect((await getApproval()).account_id).to.equal(user3Account.id);
+
+			// The approval is stored, but the account is picked on the screen, so the screen is shown again.
+			const res3 = await authorize();
+			expect(res3.headers['location']).to.include('https://dash.globalping.io/authorize/');
+		});
+
+		it('should take the account from the session claim', async () => {
+			// Directus puts the account the session acts for into the session token; the approval follows it when the
+			// dashboard sends nothing.
+			const cookie = await new jose.SignJWT({ id: user1.id, app_access: 1, user_account_id: orgAccount.id })
+				.setProtectedHeader({ alg: 'HS256' })
+				.setIssuedAt()
+				.setExpirationTime('1h')
+				.sign(Buffer.from(sessionSecret));
+
+			const res1 = await defaultAuthorizationRequest(client2, { Cookie: `dash_session_token=${cookie}` });
+			expect(res1.status).to.equal(302);
+			expect(res1.headers['location']).to.include('https://dash.globalping.io/authorize/');
+
+			const res2 = await requestAgent
+				.post(getApprovalUrl(res1.headers['location']!))
+				.set('Cookie', `dash_session_token=${cookie}`)
+				.send({ approved: 1 });
+
+			expect(res2.status).to.equal(302);
+			expect((await getApproval()).account_id).to.equal(orgAccount.id);
+		});
+
+		it('should approve the app for an org the user is a member of', async () => {
+			const res = await defaultTokenRequest(client2, {}, {}, { accountId: orgAccount.id });
+			expect(res.status).to.equal(200);
+
+			const approval = await getApproval();
+			expect(approval.user_created).to.equal(user1.id);
+			expect(approval.account_id).to.equal(orgAccount.id);
+
+			const tokens = await getTokenAccounts(res.body.access_token as string);
+			expect(tokens).to.have.lengthOf(2);
+			tokens.forEach(token => expect(token.account_id).to.equal(orgAccount.id));
+		});
+
+		it('should keep the account of the refreshed token', async () => {
+			const res1 = await defaultTokenRequest(client2, {}, {}, { accountId: orgAccount.id });
+			expect(res1.status).to.equal(200);
+
+			const res2 = await requestAgent
+				.post(tokenEndpoint)
+				.set('Content-Type', 'application/x-www-form-urlencoded')
+				.send({
+					client_id: client2.id,
+					client_secret: secrets.get(client2),
+					grant_type: 'refresh_token',
+					refresh_token: res1.body.refresh_token as string,
+				});
+
+			expect(res2.status).to.equal(200);
+
+			const tokens = await getTokenAccounts(res2.body.access_token as string);
+			expect(tokens).to.have.lengthOf(2);
+			tokens.forEach(token => expect(token.account_id).to.equal(orgAccount.id));
+		});
+
+		it('should reject an approval for an account of another user', async () => {
+			const res1 = await defaultAuthorizationRequest(client2);
+			expect(res1.status).to.equal(302);
+
+			const res2 = await requestAgent
+				.post(getApprovalUrl(res1.headers['location']!))
+				.set('Cookie', `dash_session_token=${user1Cookie}`)
+				.send({ approved: 1, accountId: user2Account.id });
+
+			expect(res2.status).to.equal(403);
+			expect(await getApproval()).to.equal(undefined);
+		});
+
+		it('should reject an approval for an org where the user is only a viewer', async () => {
+			const user2Cookie = await new jose.SignJWT({ id: user2.id, app_access: 1 })
+				.setProtectedHeader({ alg: 'HS256' })
+				.setIssuedAt()
+				.setExpirationTime('1h')
+				.sign(Buffer.from(sessionSecret));
+
+			const res1 = await requestAgent
+				.get(authorizationEndpoint)
+				.set('Cookie', `dash_session_token=${user2Cookie}`)
+				.query({
+					client_id: client2.id,
+					redirect_uri: JSON.parse(client2.redirect_urls)[0],
+					response_type: 'code',
+					scope: 'measurements',
+					state: 'someRandomState',
+					code_challenge: codeChallenge,
+					code_challenge_method: 'S256',
+				});
+
+			expect(res1.status).to.equal(302);
+
+			const res2 = await requestAgent
+				.post(getApprovalUrl(res1.headers['location']!))
+				.set('Cookie', `dash_session_token=${user2Cookie}`)
+				.send({ approved: 1, accountId: orgAccount.id });
+
+			expect(res2.status).to.equal(403);
+			expect(await getApproval()).to.equal(undefined);
 		});
 	});
 
