@@ -25,7 +25,7 @@ const handle = (options: OAuthRouteOptions) => {
 						return {
 							id: user.id,
 							$state: state || null,
-							// PHASE5: drop the lookup. Directus puts the account in the cookie, the sessions issued before that stay valid for a day.
+							// PHASE5: drop the lookup. Directus puts the account in the cookie; sessions issued before that keep arriving without it for a day.
 							accountId: user.userAccountId ?? await getUserAccountId(user.id),
 						};
 					},

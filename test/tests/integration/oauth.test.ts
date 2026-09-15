@@ -537,6 +537,19 @@ describe('OAuth', () => {
 			expect((await getApproval()).account_id).to.equal(user1Account.id);
 		});
 
+		it('should reject an approval for an account that does not exist', async () => {
+			const res1 = await defaultAuthorizationRequest(client2);
+			expect(res1.status).to.equal(302);
+
+			const res2 = await requestAgent
+				.post(getApprovalUrl(res1.headers['location']!))
+				.set('Cookie', `dash_session_token=${user1Cookie}`)
+				.send({ approved: 1, accountId: 'no-such-account' });
+
+			expect(res2.status).to.equal(403);
+			expect(await getApproval()).to.equal(undefined);
+		});
+
 		it('should reject an approval for an org where the user is only a viewer', async () => {
 			const user2Cookie = await new jose.SignJWT({ id: user2.id, app_access: 1 })
 				.setProtectedHeader({ alg: 'HS256' })

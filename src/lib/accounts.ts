@@ -1,8 +1,8 @@
 import { client as sql } from './sql/client.js';
 
-export const ACCOUNTS_TABLE = 'gp_accounts';
-export const ORG_MEMBERS_TABLE = 'gp_org_members';
-export const USERS_TABLE = 'directus_users';
+const ACCOUNTS_TABLE = 'gp_accounts';
+const ORG_MEMBERS_TABLE = 'gp_org_members';
+const USERS_TABLE = 'directus_users';
 const APPROVING_ROLES = [ 'admin', 'member' ];
 
 export const getUserAccountId = async (userId: string): Promise<string | null> => {

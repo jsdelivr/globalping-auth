@@ -22,7 +22,7 @@ export const accounts = [
 export const orgMembers = [
 	{ id: 'org1_user1', org: orgs[0]!.id, user: users[0]!.id, role: 'member' },
 	{ id: 'org1_user2', org: orgs[0]!.id, user: users[1]!.id, role: 'viewer' },
-	{ id: 'org1_user3', org: orgs[0]!.id, user: users[2]!.id, role: 'member' },
+	{ id: 'org1_user3', org: orgs[0]!.id, user: users[2]!.id, role: 'admin' },
 ];
 
 export const clients = [
