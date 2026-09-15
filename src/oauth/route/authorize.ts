@@ -14,8 +14,6 @@ const handle = (options: OAuthRouteOptions) => {
 		}
 
 		const user = ctx.state.user;
-		// PHASE5: drop the lookup. Directus puts the account in the cookie, the sessions issued before that stay valid for a day.
-		const userAccountId = user.userAccountId ?? await getUserAccountId(user.id);
 		const request = createOAuthRequest(ctx);
 		const response = new OAuthResponse(ctx.response);
 		const state = (request.body as StateObject)?.state || (request.query as StateObject)?.state;
@@ -23,11 +21,12 @@ const handle = (options: OAuthRouteOptions) => {
 		await oAuthServer.handle(ctx, response, () => {
 			return oAuthServer.authorize(request, response, {
 				authenticateHandler: {
-					handle () {
+					async handle () {
 						return {
 							id: user.id,
 							$state: state || null,
-							accountId: userAccountId,
+							// PHASE5: drop the lookup. Directus puts the account in the cookie, the sessions issued before that stay valid for a day.
+							accountId: user.userAccountId ?? await getUserAccountId(user.id),
 						};
 					},
 				},
