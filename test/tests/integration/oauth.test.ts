@@ -328,7 +328,7 @@ describe('OAuth', () => {
 	});
 
 	describe('Accounts', () => {
-		const getApproval = () => sql('gp_apps_approvals').where({ app: client2.id }).first<{ user_created: string; account_id: string }>();
+		const getApproval = () => sql('gp_apps_approvals').where({ app: client2.id }).first<{ user_created: string; account_id: string; scopes: string }>();
 		const getTokenAccounts = (accessToken: string) => {
 			const hash = createHash('sha256').update(base32.decode(accessToken.toUpperCase())).digest('base64');
 
@@ -454,6 +454,54 @@ describe('OAuth', () => {
 
 			expect(res2.status).to.equal(403);
 			expect(await getApproval()).to.equal(undefined);
+		});
+
+		it('should not carry the scopes approved for one account over to another', async () => {
+			const res1 = await defaultAuthorizationRequest(client2, {}, { scope: 'probes' });
+
+			const res2 = await requestAgent
+				.post(getApprovalUrl(res1.headers['location']!))
+				.set('Cookie', `dash_session_token=${user1Cookie}`)
+				.send({ approved: 1 });
+
+			expect(res2.status).to.equal(302);
+			expect(JSON.parse((await getApproval()).scopes)).to.deep.equal([ 'probes' ]);
+
+			const res3 = await defaultAuthorizationRequest(client2, {}, { scope: 'measurements' });
+
+			const res4 = await requestAgent
+				.post(getApprovalUrl(res3.headers['location']!))
+				.set('Cookie', `dash_session_token=${user1Cookie}`)
+				.send({ approved: 1, accountId: orgAccount.id });
+
+			expect(res4.status).to.equal(302);
+
+			const approvals = await sql('gp_apps_approvals').where({ app: client2.id }).select('account_id', 'scopes');
+			const forOrg = approvals.find(approval => approval.account_id === orgAccount.id);
+			const forPersonal = approvals.find(approval => approval.account_id === user1Account.id);
+
+			// The org was only ever asked about `measurements`; `probes` belongs to the personal account alone.
+			expect(JSON.parse(forOrg!.scopes)).to.deep.equal([ 'measurements' ]);
+			expect(JSON.parse(forPersonal!.scopes)).to.deep.equal([ 'probes' ]);
+		});
+
+		it('should add newly approved scopes to the ones the account already has', async () => {
+			const approve = async (scope: string) => {
+				const res1 = await defaultAuthorizationRequest(client2, {}, { scope });
+
+				const res2 = await requestAgent
+					.post(getApprovalUrl(res1.headers['location']!))
+					.set('Cookie', `dash_session_token=${user1Cookie}`)
+					.send({ approved: 1, accountId: orgAccount.id });
+
+				expect(res2.status).to.equal(302);
+			};
+
+			await approve('probes');
+			await approve('measurements');
+
+			const approval = await sql('gp_apps_approvals').where({ app: client2.id, account_id: orgAccount.id }).first<{ scopes: string }>('scopes');
+			expect(JSON.parse(approval.scopes)).to.have.members([ 'probes', 'measurements' ]);
 		});
 
 		it('should not touch a pending code of another user', async () => {

@@ -169,12 +169,19 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 		}
 
 		if (code.rememberApproval) {
+			const approval = await this.sql(OAuthModel.appsAprovalsTable)
+				.where({ user_created: code.user.id, account_id: code.user.accountId, app: code.client.id })
+				.select<Approval>([ 'scopes' ])
+				.first();
+
+			const approvedScopes = approval ? JSON.parse(approval.scopes) as string[] : [];
+
 			await this.sql(OAuthModel.appsAprovalsTable).upsert({
 				id: randomUUID(),
 				user_created: code.user.id,
 				account_id: code.user.accountId,
 				app: code.client.id,
-				scopes: JSON.stringify(code.scopesToApprove),
+				scopes: JSON.stringify(_.union(approvedScopes, code.scope)),
 			});
 		}
 
@@ -192,27 +199,20 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 
 		let isApprovalRequired = true;
 		let rememberApproval = false;
-		let scopesToApprove: string[] = [];
 
 		if (client.secrets.length > 0) {
 			rememberApproval = true;
-			scopesToApprove = code.scope ?? [];
 
 			// User selects active account on the approval screen, so if there is at least one org to pick => approval is always required.
 			if (!await hasSelectableOrgs(user.id)) {
 				const approval = await this.sql(OAuthModel.appsAprovalsTable)
 					.where({ user_created: user.id, account_id: user.accountId, app: client.id })
 					.select<Approval>([ 'scopes' ])
-					.first() || null;
+					.first();
 
 				if (approval) {
 					const approvedScopes = JSON.parse(approval.scopes) as string[];
-
-					if (code.scope && code.scope.every(s => approvedScopes.includes(s))) {
-						isApprovalRequired = false;
-					} else {
-						scopesToApprove = _.union(approvedScopes, code.scope);
-					}
+					isApprovalRequired = !code.scope?.every(scope => approvedScopes.includes(scope));
 				}
 			}
 		}
@@ -225,7 +225,6 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 		} else {
 			codeToSave['publicCodeId'] = await this.generateAccessToken();
 			codeToSave['rememberApproval'] = rememberApproval;
-			codeToSave['scopesToApprove'] = scopesToApprove;
 			key = this.getPendingAuthorizationCodeRedisKey(codeToSave['publicCodeId'] as string);
 		}
 
