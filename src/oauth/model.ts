@@ -148,11 +148,11 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 		};
 	}
 
-	async approveAuthorizationCode (publicCodeId: string, approved: boolean, accountId?: string): Promise<AuthorizationCodeSaved | null> {
+	async approveAuthorizationCode (publicCodeId: string, approved: boolean, userId: string, accountId?: string): Promise<AuthorizationCodeSaved | null> {
 		const oldKey = this.getPendingAuthorizationCodeRedisKey(publicCodeId);
 		const code = await this.redis.json.get(oldKey) as AuthorizationCodeSaved | null;
 
-		if (!code) {
+		if (!code || code.user.id !== userId) {
 			return null;
 		}
 

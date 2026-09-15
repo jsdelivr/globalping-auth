@@ -6,9 +6,9 @@ CREATE TABLE IF NOT EXISTS `directus_users` (
 
 CREATE TABLE IF NOT EXISTS `gp_orgs` (
 	`id` CHAR(36) PRIMARY KEY,
-	`name` VARCHAR(255),
-	`github_id` VARCHAR(255),
-	`adoption_token` VARCHAR(255)
+	`name` VARCHAR(255) NOT NULL,
+	`github_id` VARCHAR(255) NOT NULL,
+	`adoption_token` VARCHAR(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `gp_accounts` (
@@ -38,11 +38,11 @@ CREATE TABLE `gp_apps` (
 	`date_created` timestamp NULL DEFAULT NULL,
 	`user_updated` char(36) DEFAULT NULL,
 	`date_updated` timestamp NULL DEFAULT NULL,
-	`name` varchar(255) DEFAULT NULL,
+	`name` varchar(255) NOT NULL,
 	`owner_name` varchar(255) NULL DEFAULT NULL,
 	`owner_url` varchar(255) NULL DEFAULT NULL,
-	`secrets` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT '\'[]\'' CHECK (json_valid(`secrets`)),
-	`redirect_urls` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin CHECK (json_valid(`redirect_urls`)),
+	`secrets` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT '\'[]\'' NOT NULL CHECK (json_valid(`secrets`)),
+	`redirect_urls` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`redirect_urls`)),
 	`grants` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT '\'[]\'' CHECK (json_valid(`grants`)),
 	`access_token_lifetime` int(11) DEFAULT NULL,
 	`refresh_token_lifetime` int(11) DEFAULT NULL,
@@ -67,7 +67,7 @@ CREATE TABLE `gp_tokens` (
 	`value` varchar(255) DEFAULT NULL,
 	`app_id` char(36) DEFAULT NULL,
 	`scopes` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '[]' CHECK (json_valid(`scopes`)),
-	`type` varchar(255) DEFAULT 'access_token',
+	`type` varchar(255) NOT NULL DEFAULT 'access_token',
 	`parent` int(10) unsigned DEFAULT NULL,
 	PRIMARY KEY (`id`),
 	UNIQUE KEY `gp_tokens_value_unique` (`value`),

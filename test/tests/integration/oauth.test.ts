@@ -456,6 +456,35 @@ describe('OAuth', () => {
 			expect(await getApproval()).to.equal(undefined);
 		});
 
+		it('should not touch a pending code of another user', async () => {
+			const res1 = await defaultAuthorizationRequest(client2);
+			expect(res1.status).to.equal(302);
+
+			const user2Cookie = await new jose.SignJWT({ id: user2.id, app_access: 1 })
+				.setProtectedHeader({ alg: 'HS256' })
+				.setIssuedAt()
+				.setExpirationTime('1h')
+				.sign(Buffer.from(sessionSecret));
+
+			const res2 = await requestAgent
+				.post(getApprovalUrl(res1.headers['location']!))
+				.set('Cookie', `dash_session_token=${user2Cookie}`)
+				.send({ approved: 1, accountId: user2Account.id });
+
+			expect(res2.status).to.equal(400);
+			expect(await getApproval()).to.equal(undefined);
+
+			// The code is untouched, so the user who started the flow still completes it.
+			const res3 = await requestAgent
+				.post(getApprovalUrl(res1.headers['location']!))
+				.set('Cookie', `dash_session_token=${user1Cookie}`)
+				.send({ approved: 1 });
+
+			expect(res3.status).to.equal(302);
+			expect(res3.headers['location']).to.include('code=');
+			expect((await getApproval()).account_id).to.equal(user1Account.id);
+		});
+
 		it('should reject an approval for an org where the user is only a viewer', async () => {
 			const user2Cookie = await new jose.SignJWT({ id: user2.id, app_access: 1 })
 				.setProtectedHeader({ alg: 'HS256' })

@@ -1,7 +1,6 @@
 import config from 'config';
 
 import {
-	AccessDeniedError,
 	InvalidRequestError,
 	OAuthError,
 	UnauthorizedRequestError,
@@ -93,14 +92,10 @@ class ExtendedOAuthServer extends OAuthServer {
 			throw new InvalidRequestError('Missing parameter: `publicCodeId`');
 		}
 
-		const code = await this.model.approveAuthorizationCode(publicCodeId, approved, accountId);
+		const code = await this.model.approveAuthorizationCode(publicCodeId, approved, user.id, accountId);
 
 		if (!code) {
 			throw new InvalidRequestError('Invalid parameter: `publicCodeId`');
-		}
-
-		if (code.user.id !== user.id) {
-			throw new AccessDeniedError('Access denied');
 		}
 
 		if (!approved) {
