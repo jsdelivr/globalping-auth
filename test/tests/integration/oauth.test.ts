@@ -498,10 +498,13 @@ describe('OAuth', () => {
 			};
 
 			await approve('probes');
-			await approve('measurements');
+			const first = await sql('gp_apps_approvals').where({ app: client2.id, account_id: orgAccount.id }).first<{ id: string; scopes: string }>('id', 'scopes');
 
-			const approval = await sql('gp_apps_approvals').where({ app: client2.id, account_id: orgAccount.id }).first<{ scopes: string }>('scopes');
-			expect(JSON.parse(approval.scopes)).to.have.members([ 'probes', 'measurements' ]);
+			await approve('measurements');
+			const second = await sql('gp_apps_approvals').where({ app: client2.id, account_id: orgAccount.id }).first<{ id: string; scopes: string }>('id', 'scopes');
+
+			expect(JSON.parse(second.scopes)).to.have.members([ 'probes', 'measurements' ]);
+			expect(second.id).to.equal(first.id);
 		});
 
 		it('should not touch a pending code of another user', async () => {

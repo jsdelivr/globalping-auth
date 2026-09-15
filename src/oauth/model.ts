@@ -176,13 +176,16 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 
 			const approvedScopes = approval ? JSON.parse(approval.scopes) as string[] : [];
 
-			await this.sql(OAuthModel.appsAprovalsTable).upsert({
-				id: randomUUID(),
-				user_created: code.user.id,
-				account_id: code.user.accountId,
-				app: code.client.id,
-				scopes: JSON.stringify(_.union(approvedScopes, code.scope)),
-			});
+			await this.sql(OAuthModel.appsAprovalsTable)
+				.insert({
+					id: randomUUID(),
+					user_created: code.user.id,
+					account_id: code.user.accountId,
+					app: code.client.id,
+					scopes: JSON.stringify(_.union(approvedScopes, code.scope)),
+				})
+				.onConflict([ 'user_created', 'app', 'account_id' ])
+				.merge([ 'scopes' ]);
 		}
 
 		const newKey = this.getApprovedAuthorizationCodeRedisKey(code.authorizationCode);
