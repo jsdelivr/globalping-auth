@@ -157,7 +157,7 @@ paths:
       summary: Token Introspection
       description: |
         The introspection endpoint allows clients to query the active state of an access or refresh token.
-        It returns information about the token such as its scope, client ID, and username.
+        It returns information about the token such as its scope, client ID, username and organization.
       requestBody:
         required: true
         content:
@@ -190,6 +190,10 @@ paths:
                   username:
                     type: string
                     description: The username associated with the token (if applicable).
+                  organization:
+                    type: string
+                    nullable: true
+                    description: The organization the token acts for, or null when it acts for the user themselves.
                   token_type:
                     type: string
                     description: The type of the token (e.g., Bearer).

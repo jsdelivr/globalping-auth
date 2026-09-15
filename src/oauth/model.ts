@@ -24,7 +24,6 @@ import {
 	ClientWithCredentials,
 	InternalToken,
 	InternalTokenRow,
-	InternalUser,
 	ClientCredentialsUser,
 	PublicAuthorizationCodeDetails,
 	Token,
@@ -39,6 +38,8 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 	static appsAprovalsTable = 'gp_apps_approvals';
 	static usersTable = 'directus_users';
 	static tokensTable = 'gp_tokens';
+	static accountsTable = 'gp_accounts';
+	static orgsTable = 'gp_orgs';
 	static validScopes = config.get<string[]>('auth.validScopes');
 
 	constructor (
@@ -294,8 +295,18 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 		return client;
 	}
 
-	async getUser (id: string): Promise<InternalUser | null> {
-		return await this.sql(OAuthModel.usersTable).where({ id }).select<InternalUser>([ 'id', 'github_username' ]).first() || null;
+	async getTokenOwner (tokenId: number): Promise<{ username: string | null; organization: string | null }> {
+		const owner = await this.sql(OAuthModel.tokensTable)
+			.leftJoin(OAuthModel.usersTable, `${OAuthModel.usersTable}.id`, `${OAuthModel.tokensTable}.user_created`)
+			.leftJoin(OAuthModel.accountsTable, `${OAuthModel.accountsTable}.id`, `${OAuthModel.tokensTable}.account_id`)
+			.leftJoin(OAuthModel.orgsTable, `${OAuthModel.orgsTable}.id`, `${OAuthModel.accountsTable}.org`)
+			.where(`${OAuthModel.tokensTable}.id`, tokenId)
+			.first<{ username: string | null; organization: string | null } | undefined>({
+				username: `${OAuthModel.usersTable}.github_username`,
+				organization: `${OAuthModel.orgsTable}.name`,
+			});
+
+		return { username: owner?.username ?? null, organization: owner?.organization ?? null };
 	}
 
 	async getUserFromClient (client: ClientWithCredentials): Promise<ClientCredentialsUser | null> {

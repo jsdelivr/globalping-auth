@@ -46,10 +46,6 @@ export type Approval = {
 	scopes: string;
 };
 
-export type InternalUser = {
-	id: string;
-	github_username: string;
-};
 
 export type ClientCredentialsUser = {
 	id: null;

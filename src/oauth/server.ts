@@ -128,13 +128,14 @@ class ExtendedOAuthServer extends OAuthServer {
 			return;
 		}
 
-		const user = await this.model.getUser(token.user_created);
+		const { username, organization } = await this.model.getTokenOwner(token.id);
 
 		response.body = {
 			active: true,
 			scope: token.scopes.join(' '),
 			...token.app_id ? { client_id: token.app_id } : {},
-			...user ? { username: user.github_username } : {},
+			...username ? { username } : {},
+			organization,
 		};
 	}
 

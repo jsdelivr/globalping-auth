@@ -10,7 +10,7 @@ import type { Server } from 'node:http';
 
 import { client as sql } from '../../../src/lib/sql/client.js';
 import { getTestServer } from '../../utils/server.js';
-import { accounts, clients, secrets, users } from '../../../seeds/test/index.js';
+import { accounts, clients, orgs, secrets, users } from '../../../seeds/test/index.js';
 
 const sessionSecret = config.get<string>('server.session.cookieSecret');
 
@@ -25,6 +25,7 @@ const user3 = users[2]!;
 const user1Account = accounts[0]!;
 const user2Account = accounts[1]!;
 const orgAccount = accounts[2]!;
+const org1 = orgs[0]!;
 const user3Account = accounts[3]!;
 const client1 = clients[0]!;
 const client2 = clients[1]!;
@@ -976,6 +977,28 @@ describe('OAuth', () => {
 			expect(introspectResponse.body).to.have.property('scope', 'measurements');
 			expect(introspectResponse.body).to.have.property('client_id', client1.id);
 			expect(introspectResponse.body).to.have.property('username').that.is.a('string');
+		});
+
+		it('should name the organization a token acts for', async () => {
+			const res = await defaultTokenRequest(client2, {}, {}, { accountId: orgAccount.id });
+			expect(res.status).to.equal(200);
+
+			const introspectResponse = await introspectToken(res.body.access_token as string, client2);
+
+			expect(introspectResponse.status).to.equal(200);
+			expect(introspectResponse.body).to.have.property('username', user1.github_username);
+			expect(introspectResponse.body).to.have.property('organization', org1.name);
+		});
+
+		it('should report no organization for a token of a personal account', async () => {
+			const res = await defaultTokenRequest(client2);
+			expect(res.status).to.equal(200);
+
+			const introspectResponse = await introspectToken(res.body.access_token as string, client2);
+
+			expect(introspectResponse.status).to.equal(200);
+			expect(introspectResponse.body).to.have.property('username', user1.github_username);
+			expect(introspectResponse.body).to.have.property('organization', null);
 		});
 
 		it('should return inactive for an invalid token', async () => {
