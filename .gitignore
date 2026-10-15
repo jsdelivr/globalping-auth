@@ -8,3 +8,4 @@ tmp/
 config/local*
 .eslintcache
 .env
+.worktrees/

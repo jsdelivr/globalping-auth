@@ -6,6 +6,7 @@ import _ from 'lodash';
 
 import {
 	InvalidClientError,
+	InvalidGrantError,
 	InvalidRequestError,
 	AuthorizationCode,
 	AuthorizationCodeModel,
@@ -15,6 +16,7 @@ import {
 } from '@node-oauth/oauth2-server';
 import { Knex } from 'knex';
 import { RedisClient } from '../lib/redis/shared.js';
+import { hasSelectableOrgs, isAccountAvailable } from '../lib/accounts.js';
 
 import {
 	AuthorizationCodeSaved,
@@ -23,7 +25,6 @@ import {
 	ClientWithCredentials,
 	InternalToken,
 	InternalTokenRow,
-	InternalUser,
 	ClientCredentialsUser,
 	PublicAuthorizationCodeDetails,
 	Token,
@@ -38,6 +39,8 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 	static appsAprovalsTable = 'gp_apps_approvals';
 	static usersTable = 'directus_users';
 	static tokensTable = 'gp_tokens';
+	static accountsTable = 'gp_accounts';
+	static orgsTable = 'gp_orgs';
 	static validScopes = config.get<string[]>('auth.validScopes');
 
 	constructor (
@@ -75,7 +78,7 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 			client,
 			refreshToken,
 			scope: token.scopes,
-			user: { id: token.user_created },
+			user: { id: token.user_created, accountId: token.account_id },
 			...token.expire ? { refreshTokenExpiresAt: token.expire } : {},
 		};
 	}
@@ -108,6 +111,7 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 			app_id: token.app_id,
 			parent: token.parent,
 			user_created: token.user_created,
+			account_id: token.account_id,
 		};
 	}
 
@@ -146,11 +150,11 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 		};
 	}
 
-	async approveAuthorizationCode (publicCodeId: string, approved: boolean): Promise<AuthorizationCodeSaved | null> {
+	async approveAuthorizationCode (publicCodeId: string, approved: boolean, userId: string, accountId?: string): Promise<AuthorizationCodeSaved | null> {
 		const oldKey = this.getPendingAuthorizationCodeRedisKey(publicCodeId);
 		const code = await this.redis.json.get(oldKey) as AuthorizationCodeSaved | null;
 
-		if (!code) {
+		if (!code || code.user.id !== userId) {
 			return null;
 		}
 
@@ -159,13 +163,31 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 			return code;
 		}
 
+		// The account the approving user picked. It lands both in the approval row
+		// and in the tokens issued for this code, because saveToken reads the user off the stored code.
+		if (accountId) {
+			code.user.accountId = accountId;
+			await this.redis.json.set(oldKey, '$.user.accountId', accountId);
+		}
+
 		if (code.rememberApproval) {
-			await this.sql(OAuthModel.appsAprovalsTable).upsert({
-				id: randomUUID(),
-				user: code.user.id,
-				app: code.client.id,
-				scopes: JSON.stringify(code.scopesToApprove),
-			});
+			const approval = await this.sql(OAuthModel.appsAprovalsTable)
+				.where({ user_created: code.user.id, account_id: code.user.accountId, app: code.client.id })
+				.select<Approval>([ 'scopes' ])
+				.first();
+
+			const approvedScopes = approval ? JSON.parse(approval.scopes) as string[] : [];
+
+			await this.sql(OAuthModel.appsAprovalsTable)
+				.insert({
+					id: randomUUID(),
+					user_created: code.user.id,
+					account_id: code.user.accountId,
+					app: code.client.id,
+					scopes: JSON.stringify(_.union(approvedScopes, code.scope)),
+				})
+				.onConflict([ 'user_created', 'app', 'account_id' ])
+				.merge([ 'scopes' ]);
 		}
 
 		const newKey = this.getApprovedAuthorizationCodeRedisKey(code.authorizationCode);
@@ -182,20 +204,20 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 
 		let isApprovalRequired = true;
 		let rememberApproval = false;
-		let scopesToApprove: string[] = [];
 
 		if (client.secrets.length > 0) {
 			rememberApproval = true;
-			scopesToApprove = code.scope ?? [];
-			const approval = await this.sql(OAuthModel.appsAprovalsTable).where({ user: user.id, app: client.id }).select<Approval>([ 'scopes' ]).first() || null;
 
-			if (approval) {
-				const approvedScopes = JSON.parse(approval.scopes) as string[];
+			// User selects active account on the approval screen, so if there is at least one org to pick => approval is always required.
+			if (!await hasSelectableOrgs(user.id)) {
+				const approval = await this.sql(OAuthModel.appsAprovalsTable)
+					.where({ user_created: user.id, account_id: user.accountId, app: client.id })
+					.select<Approval>([ 'scopes' ])
+					.first();
 
-				if (code.scope && code.scope.every(s => approvedScopes.includes(s))) {
-					isApprovalRequired = false;
-				} else {
-					scopesToApprove = _.union(approvedScopes, code.scope);
+				if (approval) {
+					const approvedScopes = JSON.parse(approval.scopes) as string[];
+					isApprovalRequired = !code.scope?.every(scope => approvedScopes.includes(scope));
 				}
 			}
 		}
@@ -208,7 +230,6 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 		} else {
 			codeToSave['publicCodeId'] = await this.generateAccessToken();
 			codeToSave['rememberApproval'] = rememberApproval;
-			codeToSave['scopesToApprove'] = scopesToApprove;
 			key = this.getPendingAuthorizationCodeRedisKey(codeToSave['publicCodeId'] as string);
 		}
 
@@ -216,7 +237,7 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 			this.redis.json.set(key, '$', {
 				...codeToSave,
 				client: { id: client.id, name: client.name, owner: { name: client.owner_name, url: client.owner_url } },
-				user: { id: user.id, $state: user.$state },
+				user: { id: user.id, $state: user.$state, accountId: user.accountId },
 			}),
 			this.redis.pExpireAt(key, codeToSave.expiresAt),
 		]);
@@ -275,8 +296,18 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 		return client;
 	}
 
-	async getUser (id: string): Promise<InternalUser | null> {
-		return await this.sql(OAuthModel.usersTable).where({ id }).select<InternalUser>([ 'id', 'github_username' ]).first() || null;
+	async getTokenOwner (tokenId: number): Promise<{ username: string | null; organization: string | null }> {
+		const owner = await this.sql(OAuthModel.tokensTable)
+			.leftJoin(OAuthModel.usersTable, `${OAuthModel.usersTable}.id`, `${OAuthModel.tokensTable}.user_created`)
+			.leftJoin(OAuthModel.accountsTable, `${OAuthModel.accountsTable}.id`, `${OAuthModel.tokensTable}.account_id`)
+			.leftJoin(OAuthModel.orgsTable, `${OAuthModel.orgsTable}.id`, `${OAuthModel.accountsTable}.org`)
+			.where(`${OAuthModel.tokensTable}.id`, tokenId)
+			.first<{ username: string | null; organization: string | null } | undefined>({
+				username: `${OAuthModel.usersTable}.github_username`,
+				organization: `${OAuthModel.orgsTable}.name`,
+			});
+
+		return { username: owner?.username ?? null, organization: owner?.organization ?? null };
 	}
 
 	async getUserFromClient (client: ClientWithCredentials): Promise<ClientCredentialsUser | null> {
@@ -284,7 +315,7 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 			throw new InvalidClientError('Invalid client: client should have secret');
 		}
 
-		return { id: null };
+		return { id: null, accountId: null };
 	}
 
 	async revokeToken (token: RefreshToken): Promise<boolean> {
@@ -313,6 +344,10 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 			throw new InvalidClientError('Invalid client: client credentials are invalid');
 		}
 
+		if (user.accountId && !await isAccountAvailable(user.accountId, user.id)) {
+			throw new InvalidGrantError('Invalid grant: account is not available to the user');
+		}
+
 		if (token.refreshToken) {
 			const refreshBytes = base32.decode(token.refreshToken.toUpperCase());
 			const refreshHash = createHash('sha256').update(refreshBytes).digest('base64');
@@ -324,6 +359,7 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 				expire: token.refreshTokenExpiresAt,
 				date_created: now,
 				user_created: user.id,
+				account_id: user.accountId,
 				app_id: client.id,
 				value: refreshHash,
 			});
@@ -339,6 +375,7 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 			expire: token.accessTokenExpiresAt,
 			date_created: now,
 			user_created: user.id,
+			account_id: user.accountId,
 			app_id: client.id,
 			value: accessHash,
 			parent: refreshTokenId,

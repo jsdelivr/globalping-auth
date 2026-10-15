@@ -1,7 +1,6 @@
 import config from 'config';
 
 import {
-	AccessDeniedError,
 	InvalidRequestError,
 	OAuthError,
 	UnauthorizedRequestError,
@@ -11,7 +10,6 @@ import {
 	Request as OAuthRequest,
 	Response as OAuthResponse,
 	ServerOptions,
-	User,
 } from '@node-oauth/oauth2-server';
 
 import { getRedisClient } from '../lib/redis/client.js';
@@ -89,19 +87,15 @@ class ExtendedOAuthServer extends OAuthServer {
 		return code;
 	}
 
-	async submitApproval (publicCodeId: string | undefined, approved: boolean, user: User, response: OAuthResponse) {
+	async submitApproval (publicCodeId: string | undefined, approved: boolean, user: { id: string }, response: OAuthResponse, accountId?: string) {
 		if (!publicCodeId) {
 			throw new InvalidRequestError('Missing parameter: `publicCodeId`');
 		}
 
-		const code = await this.model.approveAuthorizationCode(publicCodeId, approved);
+		const code = await this.model.approveAuthorizationCode(publicCodeId, approved, user.id, accountId);
 
 		if (!code) {
 			throw new InvalidRequestError('Invalid parameter: `publicCodeId`');
-		}
-
-		if (code.user.id !== user['id']) {
-			throw new AccessDeniedError('Access denied');
 		}
 
 		if (!approved) {
@@ -134,13 +128,14 @@ class ExtendedOAuthServer extends OAuthServer {
 			return;
 		}
 
-		const user = await this.model.getUser(token.user_created);
+		const { username, organization } = await this.model.getTokenOwner(token.id);
 
 		response.body = {
 			active: true,
 			scope: token.scopes.join(' '),
 			...token.app_id ? { client_id: token.app_id } : {},
-			...user ? { username: user.github_username } : {},
+			...username ? { username } : {},
+			...organization ? { organization } : {},
 		};
 	}
 

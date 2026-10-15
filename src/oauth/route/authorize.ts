@@ -3,6 +3,7 @@ import { oAuthServer } from '../server.js';
 import { ExtendedContext } from '../../types.js';
 import { OAuthRouteOptions } from '../types.js';
 import { createOAuthRequest } from '../request.js';
+import { getUserAccountId } from '../../lib/accounts.js';
 
 type StateObject = { state?: string } | undefined;
 
@@ -20,10 +21,12 @@ const handle = (options: OAuthRouteOptions) => {
 		await oAuthServer.handle(ctx, response, () => {
 			return oAuthServer.authorize(request, response, {
 				authenticateHandler: {
-					handle () {
+					async handle () {
 						return {
 							id: user.id,
 							$state: state || null,
+							// PHASE5: drop the lookup. Directus puts the account in the cookie; sessions issued before that keep arriving without it for a day.
+							accountId: user.userAccountId ?? await getUserAccountId(user.id),
 						};
 					},
 				},
