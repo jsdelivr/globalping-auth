@@ -6,6 +6,7 @@ import _ from 'lodash';
 
 import {
 	InvalidClientError,
+	InvalidGrantError,
 	InvalidRequestError,
 	AuthorizationCode,
 	AuthorizationCodeModel,
@@ -15,7 +16,7 @@ import {
 } from '@node-oauth/oauth2-server';
 import { Knex } from 'knex';
 import { RedisClient } from '../lib/redis/shared.js';
-import { hasSelectableOrgs } from '../lib/accounts.js';
+import { hasSelectableOrgs, isAccountAvailable } from '../lib/accounts.js';
 
 import {
 	AuthorizationCodeSaved,
@@ -341,6 +342,10 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 
 		if (client.secrets.length > 0 && (!client.requestSecret || !client.secrets.includes(client.requestSecret))) {
 			throw new InvalidClientError('Invalid client: client credentials are invalid');
+		}
+
+		if (user.accountId && !await isAccountAvailable(user.accountId, user.id)) {
+			throw new InvalidGrantError('Invalid grant: account is not available to the user');
 		}
 
 		if (token.refreshToken) {

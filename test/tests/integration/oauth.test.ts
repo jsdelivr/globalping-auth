@@ -10,7 +10,7 @@ import type { Server } from 'node:http';
 
 import { client as sql } from '../../../src/lib/sql/client.js';
 import { getTestServer } from '../../utils/server.js';
-import { accounts, clients, orgs, secrets, users } from '../../../seeds/test/index.js';
+import { accounts, clients, orgMembers, orgs, secrets, users } from '../../../seeds/test/index.js';
 
 const sessionSecret = config.get<string>('server.session.cookieSecret');
 
@@ -339,6 +339,10 @@ describe('OAuth', () => {
 				.select<{ account_id: string | null }[]>('account_id');
 		};
 
+		afterEach(async () => {
+			await sql('gp_org_members').insert(orgMembers).onConflict('id').ignore();
+		});
+
 		it('should approve the app and issue its tokens for the personal account', async () => {
 			const res = await defaultTokenRequest(client2);
 			expect(res.status).to.equal(200);
@@ -442,6 +446,29 @@ describe('OAuth', () => {
 			const tokens = await getTokenAccounts(res2.body.access_token as string);
 			expect(tokens).to.have.lengthOf(2);
 			tokens.forEach(token => expect(token.account_id).to.equal(orgAccount.id));
+		});
+
+		it('should not issue tokens for an org the user has left since the approval', async () => {
+			const authorizationCode = await getAuthorizationCode(client2, { accountId: orgAccount.id });
+			const orgTokens = () => sql('gp_tokens').where({ user_created: user1.id, account_id: orgAccount.id });
+			const tokensBefore = (await orgTokens()).length;
+			await sql('gp_org_members').where({ id: orgMembers[0]!.id }).del();
+
+			const res = await requestAgent
+				.post(tokenEndpoint)
+				.set('Content-Type', 'application/x-www-form-urlencoded')
+				.send({
+					client_id: client2.id,
+					client_secret: secrets.get(client2),
+					code: authorizationCode,
+					redirect_uri: JSON.parse(client2.redirect_urls)[0],
+					grant_type: 'authorization_code',
+					code_verifier: codeVerifier,
+				});
+
+			expect(res.status).to.equal(400);
+			expect(res.body).to.have.property('error', 'invalid_grant');
+			expect(await orgTokens()).to.have.lengthOf(tokensBefore);
 		});
 
 		it('should reject an approval for an account of another user', async () => {
