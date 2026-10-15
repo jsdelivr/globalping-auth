@@ -1038,7 +1038,7 @@ describe('OAuth', () => {
 
 			expect(introspectResponse.status).to.equal(200);
 			expect(introspectResponse.body).to.have.property('username', user1.github_username);
-			expect(introspectResponse.body).to.have.property('organization', null);
+			expect(introspectResponse.body).to.not.have.property('organization');
 		});
 
 		it('should return inactive for an invalid token', async () => {

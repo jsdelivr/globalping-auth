@@ -135,7 +135,7 @@ class ExtendedOAuthServer extends OAuthServer {
 			scope: token.scopes.join(' '),
 			...token.app_id ? { client_id: token.app_id } : {},
 			...username ? { username } : {},
-			organization,
+			...organization ? { organization } : {},
 		};
 	}
 

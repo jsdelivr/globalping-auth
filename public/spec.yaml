@@ -191,10 +191,8 @@ paths:
                     type: string
                     description: The username associated with the token (if applicable).
                   organization:
-                    type:
-                      - string
-                      - 'null'
-                    description: The organization the token acts for, or null when it acts for the user themselves.
+                    type: string
+                    description: The organization the token acts for (if applicable).
                   token_type:
                     type: string
                     description: The type of the token (e.g., Bearer).
