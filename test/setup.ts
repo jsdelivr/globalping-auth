@@ -32,6 +32,9 @@ const dropAllTables = async (sql: Knex) => {
 		'gp_apps_approvals',
 		'gp_tokens',
 		'gp_apps',
+		'gp_org_members',
+		'gp_accounts',
+		'gp_orgs',
 		'directus_users',
 		'knex_migrations',
 	];

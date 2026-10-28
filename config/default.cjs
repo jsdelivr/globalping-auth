@@ -13,6 +13,7 @@ module.exports = {
 	},
 	redis: {
 		url: 'redis://localhost:7001',
+		password: 'PASSWORD',
 		socket: {
 			tls: false,
 		},

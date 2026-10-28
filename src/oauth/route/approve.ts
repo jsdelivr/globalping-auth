@@ -2,6 +2,7 @@ import { Response as OAuthResponse } from '@node-oauth/oauth2-server';
 import { oAuthServer } from '../server.js';
 import { ExtendedContext } from '../../types.js';
 import { ApproveRequest } from '../types.js';
+import { isAccountAvailable } from '../../lib/accounts.js';
 
 export const approveGet = async (ctx: ExtendedContext): Promise<void> => {
 	const publicCodeId = ctx.params['publicCodeId'];
@@ -20,11 +21,16 @@ export const approvePost = async (ctx: ExtendedContext): Promise<void> => {
 
 	const user = ctx.state.user;
 	const publicCodeId = ctx.params['publicCodeId'];
-	const { approved } = ctx.request.body as ApproveRequest;
+	const { approved, accountId } = ctx.request.body as ApproveRequest;
 	const response = new OAuthResponse(ctx.response);
 
+	if (accountId && !await isAccountAvailable(accountId, user.id)) {
+		ctx.status = 403;
+		return;
+	}
+
 	await oAuthServer.handle(ctx, response, () => {
-		return oAuthServer.submitApproval(publicCodeId, !!approved, user, response);
+		return oAuthServer.submitApproval(publicCodeId, !!approved, user, response, accountId);
 	});
 };
 

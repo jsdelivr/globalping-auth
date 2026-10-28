@@ -11,6 +11,7 @@ type SessionCookiePayload = {
 	role?: string;
 	app_access?: number;
 	admin_access?: number;
+	user_account_id?: string;
 };
 
 export const authenticate = (): ExtendedMiddleware => {
@@ -24,7 +25,7 @@ export const authenticate = (): ExtendedMiddleware => {
 				const result = await jwtVerify<SessionCookiePayload>(sessionCookie, sessionKey);
 
 				if (result.payload.id && result.payload.app_access) {
-					ctx.state.user = { id: result.payload.id, authMode: 'cookie' };
+					ctx.state.user = { id: result.payload.id, userAccountId: result.payload.user_account_id, authMode: 'cookie' };
 					apmAgent.setUserContext({ id: result.payload.id });
 				}
 			} catch {}
@@ -35,4 +36,4 @@ export const authenticate = (): ExtendedMiddleware => {
 };
 
 export type AuthenticateOptions = { session: { cookieName: string; cookieSecret: string } };
-export type AuthenticateState = { user?: { id: string; scopes?: string[]; authMode: 'cookie' | 'token' } };
+export type AuthenticateState = { user?: { id: string; userAccountId: string | undefined; scopes?: string[]; authMode: 'cookie' | 'token' } };
