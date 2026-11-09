@@ -68,7 +68,7 @@ describe('OAuth', () => {
 		const res2 = await requestAgent
 			.post(getApprovalUrl(res1.headers['location']!))
 			.set('Cookie', `dash_session_token=${user1Cookie}`)
-			.send({ approved: 1, ...approveBody });
+			.send({ approved: 1, accountId: user1Account.id, ...approveBody });
 
 		expect(res2.status).to.equal(302);
 		expect(res2.headers['location']).to.include(`code=`);
@@ -115,7 +115,7 @@ describe('OAuth', () => {
 		codeVerifier = generateRandomCodeVerifier();
 		codeChallenge = await calculatePKCECodeChallenge(codeVerifier);
 
-		user1Cookie = await new jose.SignJWT({ id: user1.id, app_access: 1 })
+		user1Cookie = await new jose.SignJWT({ id: user1.id, app_access: 1, user_account_id: user1Account.id })
 			.setProtectedHeader({ alg: 'HS256' })
 			.setIssuedAt()
 			.setExpirationTime('1h')
@@ -161,7 +161,7 @@ describe('OAuth', () => {
 			const res2 = await requestAgent
 				.post(getApprovalUrl(res1.headers['location']!))
 				.set('Cookie', `dash_session_token=${user1Cookie}`)
-				.send({ approved: 1 });
+				.send({ approved: 1, accountId: user1Account.id });
 
 			expect(res2.status).to.equal(302);
 			expect(res2.headers['location']).to.include(`code=`);
@@ -202,7 +202,7 @@ describe('OAuth', () => {
 			const res3 = await requestAgent
 				.post(getApprovalUrl(res1.headers['location']!))
 				.set('Cookie', `dash_session_token=${user1Cookie}`)
-				.send({ approved: 1 });
+				.send({ approved: 1, accountId: user1Account.id });
 
 			expect(res3.status).to.equal(400);
 		});
@@ -237,7 +237,7 @@ describe('OAuth', () => {
 			const res2 = await requestAgent
 				.post(getApprovalUrl(res1.headers['location']!))
 				.set('Cookie', `dash_session_token=${user1Cookie}`)
-				.send({ approved: 1 });
+				.send({ approved: 1, accountId: user1Account.id });
 
 			expect(res2.status).to.equal(302);
 			expect(res2.headers['location']).to.include(`code=`);
@@ -382,7 +382,7 @@ describe('OAuth', () => {
 			const res2 = await requestAgent
 				.post(getApprovalUrl(res1.headers['location']!))
 				.set('Cookie', `dash_session_token=${user3Cookie}`)
-				.send({ approved: 1 });
+				.send({ approved: 1, accountId: user3Account.id });
 
 			expect(res2.status).to.equal(302);
 			expect((await getApproval()).account_id).to.equal(user3Account.id);
@@ -392,26 +392,41 @@ describe('OAuth', () => {
 			expect(res3.headers['location']).to.include('https://dash.globalping.io/authorize/');
 		});
 
-		it('should take the account from the session claim', async () => {
-			// Directus puts the account the session acts for into the session token; the approval follows it when the
-			// dashboard sends nothing.
-			const cookie = await new jose.SignJWT({ id: user1.id, app_access: 1, user_account_id: orgAccount.id })
-				.setProtectedHeader({ alg: 'HS256' })
-				.setIssuedAt()
-				.setExpirationTime('1h')
-				.sign(Buffer.from(sessionSecret));
+		it('should skip the approval screen only for the personal account of the user', async () => {
+			const approve = async (accountId: string) => {
+				const res1 = await defaultAuthorizationRequest(client2);
 
-			const res1 = await defaultAuthorizationRequest(client2, { Cookie: `dash_session_token=${cookie}` });
-			expect(res1.status).to.equal(302);
+				const res2 = await requestAgent
+					.post(getApprovalUrl(res1.headers['location']!))
+					.set('Cookie', `dash_session_token=${user1Cookie}`)
+					.send({ approved: 1, accountId });
+
+				expect(res2.status).to.equal(302);
+			};
+
+			await approve(orgAccount.id);
+
+			// `user_account_id` is always the personal account, so the approval given for the org does not skip the screen.
+			const res1 = await defaultAuthorizationRequest(client2);
 			expect(res1.headers['location']).to.include('https://dash.globalping.io/authorize/');
+
+			await approve(user1Account.id);
+
+			const res2 = await defaultAuthorizationRequest(client2);
+			expect(res2.headers['location']).to.include('https://example.com/two/callback');
+		});
+
+		it('should reject an approval without an account', async () => {
+			const res1 = await defaultAuthorizationRequest(client2);
+			expect(res1.status).to.equal(302);
 
 			const res2 = await requestAgent
 				.post(getApprovalUrl(res1.headers['location']!))
-				.set('Cookie', `dash_session_token=${cookie}`)
+				.set('Cookie', `dash_session_token=${user1Cookie}`)
 				.send({ approved: 1 });
 
-			expect(res2.status).to.equal(302);
-			expect((await getApproval()).account_id).to.equal(orgAccount.id);
+			expect(res2.status).to.equal(400);
+			expect(await getApproval()).to.equal(undefined);
 		});
 
 		it('should approve the app for an org the user is a member of', async () => {
@@ -490,7 +505,7 @@ describe('OAuth', () => {
 			const res2 = await requestAgent
 				.post(getApprovalUrl(res1.headers['location']!))
 				.set('Cookie', `dash_session_token=${user1Cookie}`)
-				.send({ approved: 1 });
+				.send({ approved: 1, accountId: user1Account.id });
 
 			expect(res2.status).to.equal(302);
 			expect(JSON.parse((await getApproval()).scopes)).to.deep.equal([ 'probes' ]);
@@ -539,7 +554,7 @@ describe('OAuth', () => {
 			const res1 = await defaultAuthorizationRequest(client2);
 			expect(res1.status).to.equal(302);
 
-			const user2Cookie = await new jose.SignJWT({ id: user2.id, app_access: 1 })
+			const user2Cookie = await new jose.SignJWT({ id: user2.id, app_access: 1, user_account_id: user2Account.id })
 				.setProtectedHeader({ alg: 'HS256' })
 				.setIssuedAt()
 				.setExpirationTime('1h')
@@ -557,7 +572,7 @@ describe('OAuth', () => {
 			const res3 = await requestAgent
 				.post(getApprovalUrl(res1.headers['location']!))
 				.set('Cookie', `dash_session_token=${user1Cookie}`)
-				.send({ approved: 1 });
+				.send({ approved: 1, accountId: user1Account.id });
 
 			expect(res3.status).to.equal(302);
 			expect(res3.headers['location']).to.include('code=');
@@ -578,7 +593,7 @@ describe('OAuth', () => {
 		});
 
 		it('should reject an approval for an org where the user is only a viewer', async () => {
-			const user2Cookie = await new jose.SignJWT({ id: user2.id, app_access: 1 })
+			const user2Cookie = await new jose.SignJWT({ id: user2.id, app_access: 1, user_account_id: user2Account.id })
 				.setProtectedHeader({ alg: 'HS256' })
 				.setIssuedAt()
 				.setExpirationTime('1h')
