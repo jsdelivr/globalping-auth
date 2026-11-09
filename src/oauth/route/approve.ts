@@ -24,7 +24,7 @@ export const approvePost = async (ctx: ExtendedContext): Promise<void> => {
 	const { approved, accountId } = ctx.request.body as ApproveRequest;
 	const response = new OAuthResponse(ctx.response);
 
-	if (accountId && !await isAccountAvailable(accountId, user.id)) {
+	if (approved && accountId && !await isAccountAvailable(accountId, user.id)) {
 		ctx.status = 403;
 		return;
 	}

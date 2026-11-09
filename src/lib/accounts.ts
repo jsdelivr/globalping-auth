@@ -5,11 +5,6 @@ const ORG_MEMBERS_TABLE = 'gp_org_members';
 const USERS_TABLE = 'directus_users';
 const APPROVING_ROLES = [ 'admin', 'member' ];
 
-export const getUserAccountId = async (userId: string): Promise<string | null> => {
-	const account = await sql(ACCOUNTS_TABLE).where({ user: userId }).first<{ id: string } | undefined>('id');
-	return account?.id ?? null;
-};
-
 // Is it a personal account of the user, or an org account where their role is 'admin' or 'member'?
 export const isAccountAvailable = async (accountId: string, userId: string): Promise<boolean> => {
 	const account = await sql(ACCOUNTS_TABLE)
