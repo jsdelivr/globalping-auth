@@ -5,7 +5,7 @@ import apmAgent from 'elastic-apm-node';
 import { apm as apmUtils, koa as koaElasticUtils } from 'elastic-apm-utils';
 import json from 'koa-json';
 import config from 'config';
-import Router from '@koa/router';
+import { Router } from '@koa/router';
 import compress from 'koa-compress';
 import responseTime from 'koa-response-time';
 import koaFavicon from 'koa-favicon';

@@ -38,6 +38,6 @@ export const scopedLoggerWithPrefix = (scope: string, prefix: string, parent: Lo
 			};
 		}
 
-		return target[prop];
+		return Reflect.get(target, prop);
 	},
 });

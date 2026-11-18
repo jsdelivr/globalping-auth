@@ -1,14 +1,13 @@
 import _ from 'lodash';
 import pTimeout from 'p-timeout';
-import { DefaultContext, DefaultState, ParameterizedContext } from 'koa';
-import Router from '@koa/router';
+import { Router, RouterContext } from '@koa/router';
 
 import { getRedisClient } from '../../lib/redis/client.js';
 
 const PING_OK = {};
 const redis = getRedisClient();
 
-const handle = async (ctx: ParameterizedContext<DefaultState, DefaultContext & Router.RouterParamContext>): Promise<void> => {
+const handle = async (ctx: RouterContext): Promise<void> => {
 	const result = await throttledPing();
 
 	if (result === PING_OK) {
