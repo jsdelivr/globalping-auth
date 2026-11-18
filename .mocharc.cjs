@@ -2,6 +2,7 @@ module.exports = {
 	'exit': true,
 	'timeout': 10000,
 	'check-leaks': true,
+	'require': [ 'ts-node/register' ],
 	'file': [
 		'test/setup.ts',
 	],

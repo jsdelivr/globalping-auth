@@ -1,6 +1,6 @@
-import { Context, Next } from 'koa';
+import { ExtendedMiddleware } from '../../../types.js';
 
-export const corsHandler = () => async (ctx: Context, next: Next) => {
+export const corsHandler = (): ExtendedMiddleware => async (ctx, next) => {
 	ctx.set('Access-Control-Allow-Origin', '*');
 	ctx.set('Access-Control-Allow-Headers', '*');
 	ctx.set('Access-Control-Expose-Headers', '*');

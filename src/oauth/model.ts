@@ -256,7 +256,7 @@ export default class OAuthModel implements AuthorizationCodeModel, RefreshTokenM
 		return keysDeleted === 1;
 	}
 
-	async getClient (clientId: string, clientSecret: string | null): Promise<ClientWithCredentials> {
+	async getClient (clientId: string, clientSecret?: string | null): Promise<ClientWithCredentials> {
 		const row = await this.sql(OAuthModel.appsTable).where({ id: clientId }).first<ClientRow>();
 
 		if (!row) {
